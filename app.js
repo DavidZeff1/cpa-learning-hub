@@ -230,7 +230,7 @@ function details(c,tab) {
   let body='';
   if(tab==='notes') body=noteList(c);
   else if(tab==='practice') body=practicePage(c);
-  else if(c.id==='ac-297p') body=principlesPage(c);
+  else if(c.id==='ac-297p') body=session?.mode==='practice'&&session.scope===c.id?studySession():principlesPage(c);
   else {
     body=`<div class="section-head"><div><h2>Study topics</h2><p class="help">${countDone(c)} of ${plural(c.topics.length,'topic')} studied</p></div>${newTopicButton(c)}</div>`;
     body+=c.topics.map((t,i)=>`<details class="lesson-card" ${t.id===openTopic||(!openTopic&&i===Math.max(0,c.topics.findIndex(x=>!x.done)))?'open':''}>
@@ -291,9 +291,7 @@ document.addEventListener('submit',event=>{
     s.test.parts.forEach(([,answer,,id],i)=>{
       const t=c.topics.find(item=>item.id===id);
       if(!t) return;
-      t.attempts++;
-      if(responses[i]===answer) {t.hits++; if(!t.due) t.due=day(1);}
-      else {t.lastMiss=true; t.due=day();t.level=0;}
+      schedulePractice(t,responses[i]===answer);
     });
     data.last=c.id;return data;
   })) return;
@@ -304,6 +302,7 @@ document.addEventListener('submit',event=>{
 
 function practicePage(c) {
   if (session?.mode==='case' && session.scope===c.id) return casePage();
+  if (session?.mode==='mock' && session.scope===c.id) return mockPage();
   if (session?.mode==='practice' && session.scope===c.id) return studySession();
   const qs=c.topics.filter(t=>t.question), attempts=qs.reduce((n,t)=>n+t.attempts,0), hits=qs.reduce((n,t)=>n+t.hits,0);
   return `<div class="panel padded practice"><span class="tile-icon">${icon('book')}</span><h2>Practice questions</h2>
@@ -350,9 +349,7 @@ function recordAnswer(choice) {
   if (!s||s.shown||s.mode!=='practice') return;
   const [cid,tid]=s.items[s.index], t=pickTopic(db,cid,tid), correct=choice===t.correct;
   if (!save(data=>{
-    const item=pickTopic(data,cid,tid); item.attempts++; item.lastMiss=!correct;
-    if(correct) { item.hits++; if(!item.due) item.due=day(1); }
-    else { item.level=0; item.due=day(); }
+    const item=pickTopic(data,cid,tid); schedulePractice(item,correct);
     data.last=cid; return data;
   })) return;
   s.choice=choice; s.shown=true; if(correct) s.success++;
@@ -364,8 +361,11 @@ function rate(recalled) {
   const [cid,tid]=s.items[s.index];
   if (!save(data=>{
     const t=pickTopic(data,cid,tid);
-    t.due=day(recalled?intervals[Math.min(t.level,intervals.length-1)]:0);
-    t.level=recalled?Math.min(t.level+1,intervals.length):0;
+    t.done=true;
+    if(recalled) {
+      if(!t.due || t.due<=day()) t.level=Math.min(t.level+1,intervals.length);
+      t.due=day(intervals[Math.max(0,t.level-1)]);
+    } else { t.level=0;t.due=day();t.lastMiss=true; }
     data.last=cid; return data;
   })) return;
   if(recalled) s.success++;
