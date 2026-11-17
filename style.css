@@ -148,3 +148,56 @@ dialog::backdrop { background:#19241ea8; }
 .case-exhibit { margin-top: 14px; padding: 12px 15px; border-left: 3px solid var(--line); background: var(--paper); }
 .case-exhibit h3 { font: 650 14px var(--sans); margin-bottom: 5px; }
 #case-form select { width: 100%; }
+
+
+/* Chapter learning path: intentionally follows the existing Folio design. */
+.mastery-overview { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--white);border:1px solid var(--line);border-radius:10px;margin:14px 0 10px; }
+.mastery-overview>div { padding:17px 18px;border-right:1px solid var(--line); }
+.mastery-overview>div:last-child { border-right:0; }
+.mastery-overview strong { display:block;font:500 28px var(--serif);line-height:1.15; }
+.mastery-overview span { color:var(--muted);font-size:12px; }
+.chapter-list { display:grid;gap:12px;margin:23px 0; }
+.chapter-group { background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden; }
+.chapter-group>summary { display:flex;align-items:center;gap:15px;padding:20px 23px;cursor:pointer;list-style:none; }
+.chapter-group>summary::-webkit-details-marker { display:none; }
+.chapter-group>summary:hover { background:#f9faf5; }
+.chapter-group>summary strong { display:block;font:500 23px/1.2 var(--serif);letter-spacing:-.02em; }
+.chapter-group>summary small { display:block;font-size:12px;color:var(--muted);margin-top:5px; }
+.chapter-index { color:#77877a;font:500 14px ui-monospace,monospace; }
+.chapter-count { margin-left:auto;flex:none;color:var(--muted);font-size:12px; }
+.chapter-inner { padding:0 19px 19px;border-top:1px solid var(--line); }
+.chapter-inner .lesson-card { margin:11px 0 0;border-radius:8px;padding:0; }
+.deep-lesson>summary { display:flex;align-items:center;gap:12px;padding:16px;list-style:none; }
+.deep-lesson>summary::-webkit-details-marker { display:none; }
+.deep-lesson>summary:hover { background:#f7f9f4; }
+.deep-lesson .lesson-title { flex:1;margin:0; }
+.deep-lesson>summary small { margin:0;color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap; }
+.deep-lesson>summary small.retained { color:#3c6545; }
+.lesson-sequence { border:1px solid var(--line);border-radius:5px;padding:3px 7px;color:var(--muted);font-size:11px; }
+.lesson-content { border-top:1px solid var(--line);padding:6px 18px 21px; }
+.lesson-content .reading { margin:14px 0;max-width:78ch;white-space:pre-wrap; }
+.worked-box { background:#f7f9f3;border:1px solid var(--line);border-radius:8px;padding:14px 16px;max-width:78ch;margin:16px 0; }
+.worked-box h4 { margin:0 0 7px;font-weight:700;font-size:13px; }
+.worked-box p,.pitfall,.recall-box p { line-height:1.7;white-space:pre-wrap; }
+.pitfall { font-size:13px;color:#566253;margin:0 0 16px; }
+.recall-box { border:1px solid var(--line);border-radius:8px;padding:11px 15px;max-width:78ch;margin:18px 0; }
+.recall-box>summary,.recall-answer>summary { cursor:pointer;font-weight:650; }
+.recall-box p { margin-top:10px; }
+.recall-answer { margin-top:12px;padding-top:11px;border-top:1px solid var(--line); }
+.recall-answer p { padding-bottom:4px; }
+.mock-timer { font-size:13px;color:var(--muted);margin:15px 0; }
+.mock-timer strong { color:var(--forest);font-variant-numeric:tabular-nums; }
+.mock-result { border-top:1px solid var(--line);padding:12px 0; }
+.mock-result>summary { cursor:pointer; }
+.mock-result p { margin:8px 0; }
+@media (max-width:700px) {
+  .mastery-overview {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .mastery-overview>div:nth-child(2) {border-right:0;}
+  .mastery-overview>div:nth-child(-n+2) {border-bottom:1px solid var(--line);}
+  .chapter-group>summary {padding:16px;gap:10px;align-items:flex-start;}
+  .chapter-group>summary strong {font-size:20px;}
+  .chapter-count {font-size:11px;}
+  .chapter-inner {padding:0 10px 10px;}
+  .deep-lesson>summary {gap:7px;padding:12px;}
+  .deep-lesson>summary small {white-space:normal;text-align:right;}
+}
