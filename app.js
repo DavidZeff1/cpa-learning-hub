@@ -177,6 +177,51 @@ function library() {
   const counts = types.filter(t=>coursesOf(t).length).map(t=>plural(coursesOf(t).length,t.toLowerCase())).join(' · ');
   return heading('My library',counts,addItem()) + `<div class="controls">${filterButtons()}<input class="search" type="search" aria-label="Search library" id="search" value="${escapeHTML(search)}" placeholder="Search library…"></div><div id="results">${libraryGrid()}</div>`;
 }
+function principlesPage(c) {
+  const chapters = principlesChapters.map(chapter => ({
+    chapter,
+    topics: c.topics.filter(t => (t.chapter || legacyPrinciplesChapters[t.id]) === chapter.id)
+  }));
+  const ungrouped = c.topics.filter(t => !t.chapter && !legacyPrinciplesChapters[t.id]);
+  if (ungrouped.length) chapters.push({chapter:{id:'custom',title:'My additional lessons',goal:'Your own study notes and questions.'},topics:ungrouped});
+  const read = countDone(c), mastered = countMastered(c), dueCount=c.topics.filter(t=>due(t)).length;
+  const tiles = `<div class="mastery-overview">
+    <div><strong>${read}</strong><span>Read or practiced</span></div>
+    <div><strong>${mastered}</strong><span>Retained in review</span></div>
+    <div><strong>${dueCount}</strong><span>Due for review</span></div>
+    <div><strong>${c.topics.length}</strong><span>Lessons</span></div>
+  </div><p class="help">Marking a lesson as read is not mastery. Answer its question correctly and retrieve it again on a later review day to make progress toward retention.</p>`;
+  const groups = chapters.map(({chapter,topics},i)=>{
+    const understood = topics.filter(isMastered).length;
+    const shouldOpen = openTopic ? topics.some(t=>t.id===openTopic) : i===0;
+    const lessons = topics.map((t,j)=>{
+      const masteredNow=isMastered(t);
+      const state=masteredNow?'Retained':due(t)?'Due for review':t.done?'In progress':'New';
+      const theory = t.worked ? t.reading.split('\n\nWhy it matters:')[0] : t.reading;
+      const details = t.worked ? `<div class="worked-box"><h4>Worked example</h4><p>${escapeHTML(t.worked)}</p></div>
+        <p class="pitfall"><strong>Common mistake:</strong> ${escapeHTML(t.pitfall||'')}</p>` : '';
+      return `<details class="lesson-card deep-lesson" id="lesson-${escapeHTML(t.id)}" ${openTopic===t.id?'open':''}>
+        <summary><span class="lesson-sequence">${j+1}</span><span class="lesson-title">${escapeHTML(t.title)}</span>
+        <small class="${masteredNow?'retained':''}">${state}</small></summary>
+        <div class="lesson-content"><div class="reading">${escapeHTML(theory)}</div>${details}
+        <details class="recall-box"><summary>Try active recall</summary><p>${escapeHTML(t.prompt)}</p>
+          <details class="recall-answer"><summary>Reveal model answer</summary><p>${escapeHTML(t.answer)}</p></details>
+        </details><div class="actions">
+        ${action('topic-practice','Check understanding','btn green',`data-c="${c.id}" data-t="${t.id}"`)}
+        ${action('studied',t.done?'Mark unread':'Mark read', 'btn light',`data-c="${c.id}" data-t="${t.id}"`)}
+        ${action('topic','Edit lesson','text-link',`data-c="${c.id}" data-t="${t.id}"`)}</div>
+        <p class="help">${t.attempts ? t.hits+' correct of '+t.attempts+' attempts · ' : ''}${t.due ? 'Next review '+dateLabel(t.due) : 'Not scheduled yet'}</p></div>
+      </details>`;
+    }).join('');
+    return `<details class="chapter-group" id="chapter-${chapter.id}" ${shouldOpen?'open':''}>
+      <summary><span class="chapter-index">${String(i+1).padStart(2,'0')}</span><span><strong>${escapeHTML(chapter.title)}</strong>
+      <small>${escapeHTML(chapter.goal)}</small></span><span class="chapter-count">${understood}/${topics.length} retained</span></summary>
+      <div class="chapter-inner">${lessons}</div></details>`;
+  }).join('');
+  return `<div class="section-head"><div><h2>Learning path</h2><p class="help">${chapters.length} study chapters · ${c.topics.length} lessons · ${mastered} retained</p></div>${newTopicButton(c)}</div>
+  ${tiles}<div class="chapter-list">${groups}</div><p class="help">Study chapters organize the independent learning library; check official course coverage against the
+  <a class="source" href="https://www.una.edu/business/accounting-career-program/syllabus_ac297.pdf" target="_blank" rel="noopener">UNA syllabus ↗</a>.</p>`;
+}
 function details(c,tab) {
   const meta=[c.code,c.provider,c.term,c.credits&&plural(Number(c.credits),'credit'),c.tentative&&'Tentative choice'].filter(Boolean).join(' · ');
   const sections={learn:'Learn',practice:'Practice',notes:'Notes'};
