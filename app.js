@@ -200,7 +200,7 @@ function principlesPage(c) {
       const theory = t.worked ? t.reading.split('\n\nWhy it matters:')[0] : t.reading;
       const details = t.worked ? `<div class="worked-box"><h4>Worked example</h4><p>${escapeHTML(t.worked)}</p></div>
         <p class="pitfall"><strong>Common mistake:</strong> ${escapeHTML(t.pitfall||'')}</p>` : '';
-      return `<details class="lesson-card deep-lesson" id="lesson-${escapeHTML(t.id)}" ${openTopic===t.id?'open':''}>
+      return `<details class="lesson-card deep-lesson" id="lesson-${escapeHTML(t.id)}" ${openTopic===t.id||(!openTopic&&i===0&&j===0)?'open':''}>
         <summary><span class="lesson-sequence">${j+1}</span><span class="lesson-title">${escapeHTML(t.title)}</span>
         <small class="${masteredNow?'retained':''}">${state}</small></summary>
         <div class="lesson-content"><div class="reading">${escapeHTML(theory)}</div>${details}
@@ -209,6 +209,7 @@ function principlesPage(c) {
         </details><div class="actions">
         ${action('topic-practice','Check understanding','btn green',`data-c="${c.id}" data-t="${t.id}"`)}
         ${action('studied',t.done?'Mark unread':'Mark read', 'btn light',`data-c="${c.id}" data-t="${t.id}"`)}
+        ${action('topic-note','Take note','text-link',`data-c="${c.id}" data-t="${t.id}"`)}
         ${action('topic','Edit lesson','text-link',`data-c="${c.id}" data-t="${t.id}"`)}</div>
         <p class="help">${t.attempts ? t.hits+' correct of '+t.attempts+' attempts · ' : ''}${t.due ? 'Next review '+dateLabel(t.due) : 'Not scheduled yet'}</p></div>
       </details>`;
@@ -573,14 +574,15 @@ function editTopic(cid,tid) {
     openTopic=t.id; notify('Topic saved.');
   });
 }
-function editNote(cid,nid) {
+function editNote(cid,nid,tid='') {
   const c=course(cid)||active(), n=c?.notes.find(item=>item.id===nid);
+  const topic=c?.topics.find(item=>item.id===tid);
   if(!c) {editItem(); return;}
   const fields=(cid?`<p class="muted">${escapeHTML(c.title)}</p>`:selectField('cid','Save in',db.courses.map(item=>[item.id,item.title]),c.id))+
-    field('title','Note title',n?.title||'','text',true)+field('body','Note',n?.body||'','textarea',true)+(n?removeButton('note',cid,nid):'');
+    field('title','Note title',n?.title||topic?.title||'','text',true)+field('body','Note',n?.body||'','textarea',true)+(n?removeButton('note',cid,nid):'');
   showForm(n?'Edit note':'Add note',fields,'Save note',v=>{
     if(!save(next=>{
-      const item=byId(next,v.cid||c.id), note={id:n?.id||uid(),title:v.title,body:v.body,date:day()};
+      const item=byId(next,v.cid||c.id), note={id:n?.id||uid(),title:v.title,body:v.body,date:day(),...(topic?.id?{topicId:topic.id}:n?.topicId?{topicId:n.topicId}:{})};
       if(n) item.notes[item.notes.findIndex(x=>x.id===nid)]=note;
       else item.notes.unshift(note);
       return next;
@@ -637,6 +639,7 @@ document.addEventListener('click',e=>{
     case 'item': editItem(cid); break;
     case 'topic': editTopic(cid,tid); break;
     case 'note': editNote(cid,nid); break;
+    case 'topic-note': editNote(cid,null,tid); break;
     case 'remove': remove(kind,cid,id); break;
     case 'filter': filter=type;render();document.querySelector('.filter[aria-pressed=true]')?.focus({preventScroll:true});break;
     case 'studied': {
