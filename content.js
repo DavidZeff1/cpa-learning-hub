@@ -94,7 +94,7 @@ function starterWorkspace() {
     status: i === 0 ? 'In focus' : 'Planned', term: i === 0 ? term : '',
     credits: i < 10 ? '3' : '', tentative: code === 'ISC', topics, notes: []
   }));
-  return expandPrinciples({version: 1, courses, last: courses[0].id});
+  return expandCurriculum({version: 1, courses, last: courses[0].id});
 }
 
 // A one-time addition to the original AC 297P starter set, also used for legacy backups.

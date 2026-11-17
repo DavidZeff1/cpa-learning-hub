@@ -60,7 +60,7 @@ try {
   if (disk !== null) {
     const parsed = JSON.parse(disk);
     if (!validWorkspace(parsed)) throw Error('Invalid workspace');
-    db = expandPrinciples(parsed);
+    db = expandCurriculum(parsed);
   }
 } catch {
   protectedData = true;
@@ -173,7 +173,8 @@ function details(c,tab) {
       ${action('topic','Edit topic','text-link',`data-c="${c.id}" data-t="${t.id}"`)}</div></details>`).join('');
     if(!c.topics.length) body+=empty('Add a topic with a lesson and a recall prompt to start studying.');
     if(c.id==='ac-297p') body+=`<p class="help">Check your course coverage against the <a class="source" href="https://www.una.edu/business/accounting-career-program/syllabus_ac297.pdf" target="_blank" rel="noopener">published UNA syllabus ↗</a>.</p>`;
-    if(c.provider==='U.S. CPA Exam') body+=`<p class="help">Plan further topics using the <a class="source" href="https://www.aicpa-cima.com/resources/article/learn-what-is-tested-on-the-cpa-exam" target="_blank" rel="noopener">AICPA Exam Blueprints ↗</a>.</p>`;
+    if(c.provider==='University of North Alabama' && c.id!=='ac-297p') body+=`<p class="help"><a class="source" href="https://distance.una.edu/business/accounting-career-program/course-descriptions-and-syllabi.html" target="_blank" rel="noopener">UNA course descriptions ↗</a></p>`;
+    if(c.provider==='U.S. CPA Exam') body+=`<p class="help"><a class="source" href="https://assets.ctfassets.net/rb9cdnjh59cm/71s84dkfo3KEsoLlz4vv6G/c4c2a547b9c16f737b75e5e465031d3c/2609-168676_PA_Pipe_2027_CPAExam_Blueprints_Final.pdf" target="_blank" rel="noopener">2027 AICPA Exam Blueprints ↗</a> · <a class="source" href="https://www.aicpa-cima.com/resources/download/learn-what-is-tested-on-the-cpa-exam" target="_blank" rel="noopener">Exam updates and practice resources ↗</a></p>`;
   }
   return heading(c.title,meta,edit)+`<span class="chip">${escapeHTML(c.status)}</span>${tabs}${body}`;
 }
@@ -186,26 +187,38 @@ function getReviewItems() {
   }).sort((a,b) => (a.t.due || '9999').localeCompare(b.t.due || '9999'));
 }
 
+function availableCases(courseId) {
+  if (courseId === 'ac-297p') return caseTitles.map((title, index) => ({title, index}));
+  return exhibitCases.filter(item => item.courses.includes(courseId));
+}
 function casePicker(c) {
-  if (c.id !== 'ac-297p') return '';
-  return `<section class="panel padded practice"><h2>Accounting cases</h2><p>Solve three connected amounts from one scenario. Each attempt uses fresh figures.</p>
-    <div class="actions" style="margin-top:14px">${caseTitles.map((title,i)=>action('case',title,'btn light',`data-i="${i}" data-c="${c.id}"`)).join('')}</div></section>`;
+  const cases = availableCases(c.id);
+  if (!cases.length) return '';
+  const description = c.id === 'ac-297p' ? 'Solve three connected amounts. Each attempt uses fresh figures.' :
+    'Use the exhibits to solve each part, then check the reasoning.';
+  return `<section class="panel padded practice"><h2>Case practice</h2><p>${description}</p>
+    <div class="actions" style="margin-top:14px">${cases.map((item,i)=>action('case',escapeHTML(item.title),'btn light',`data-i="${i}" data-c="${c.id}"`)).join('')}</div></section>`;
 }
 function casePage() {
   const s=session, test=s.test;
-  return `<section class="panel padded practice"><div class="split"><span class="eyebrow">Accounting case</span>${action('end','Back to practice','text-link')}</div><h2>${caseTitles[s.kind]}</h2>
-    <p>${test.story}</p><form id="case-form">${test.parts.map(([label,answer,reason],i)=>{
+  const exhibits=(test.exhibits||[]).map(([title,body])=>
+    `<article class="case-exhibit"><h3>${escapeHTML(title)}</h3><p>${escapeHTML(body)}</p></article>`).join('');
+  return `<section class="panel padded practice"><div class="split"><span class="eyebrow">Case practice</span>${action('end','Back to practice','text-link')}</div><h2>${escapeHTML(test.title)}</h2>
+    <p>${escapeHTML(test.story)}</p>${exhibits}<form id="case-form">${test.parts.map(([label,answer,reason,,options],i)=>{
       const result=s.responses?s.responses[i]:null;
-      return `<label class="field">${escapeHTML(label)} ($)<input name="part${i}" type="number" step="any" required ${s.responses?`readonly value="${result}"`:''}></label>
-      ${s.responses?`<p class="feedback"><strong>${result===answer?'Correct':'Answer: '+answer.toLocaleString('en-US')}.</strong> ${escapeHTML(reason)}</p>`:''}`;
-    }).join('')}${s.responses?`<p>${s.score} of ${test.parts.length} correct.</p><div class="actions">${action('case','Try fresh figures','btn green',`data-i="${s.kind}" data-c="${s.scope}"`)}${action('end','Finish','btn light')}</div>`:'<button class="btn green">Check my work</button>'}</form></section>`;
+      const input=options ? `<select name="part${i}" required ${s.responses?'disabled':''}><option value="">Choose an answer</option>${options.map((option,index)=>
+        `<option value="${index}" ${result===index?'selected':''}>${escapeHTML(option)}</option>`).join('')}</select>` :
+        `<input name="part${i}" type="number" step="any" required ${s.responses?`readonly value="${result}"`:''}>`;
+      return `<label class="field">${escapeHTML(label)}${test.exhibits?'':' ($)'}${input}</label>
+      ${s.responses?`<p class="feedback"><strong>${result===answer?'Correct':'Answer: '+escapeHTML(options?options[answer]:answer.toLocaleString('en-US'))}.</strong> ${escapeHTML(reason)}</p>`:''}`;
+    }).join('')}${s.responses?`<p>${s.score} of ${test.parts.length} correct.</p><div class="actions">${test.exhibits?'':action('case','Try fresh figures','btn green',`data-i="${s.kind}" data-c="${s.scope}"`)}${action('end','Finish','btn light')}</div>`:'<button class="btn green">Check my work</button>'}</form></section>`;
 }
 document.addEventListener('submit',event=>{
   if(event.target.id!=='case-form') return;
   event.preventDefault();
   const s=session;
   if(!s || s.responses) return;
-  const responses=s.test.parts.map((part,i)=>event.target.elements['part'+i].valueAsNumber);
+  const responses=s.test.parts.map((part,i)=>event.target.elements['part'+i].value === '' ? NaN : Number(event.target.elements['part'+i].value));
   if(!responses.every(Number.isFinite)) return;
   if(!save(data=>{
     const c=byId(data,s.scope);
@@ -315,8 +328,8 @@ function backupPage() {
     <section class="panel padded practice"><h2>Study methods</h2>
     <p>Attempt a question before checking its explanation. In review, retrieve the answer from memory, then rate your recall. Recalled concepts return after 1, 3, 7, 14, 30 and 60 days. Missed concepts remain due today.</p>
     <p class="help">The intervals are a simple scheduling choice. The learning approach draws on research on practice testing and distributed practice. <a class="source" href="https://doi.org/10.3389/feduc.2021.581216" target="_blank" rel="noopener">Read the research ↗</a></p></section>
-    <section class="panel padded practice"><h2>Starter material</h2><p>The original lessons and questions are a starting set for your planned courses and sections. Add topics from your syllabus and exam blueprint as you go. Topic percentages reflect the material in this workspace.</p>
-    <p class="help"><a class="source" href="https://openstax.org/details/books/principles-financial-accounting" target="_blank" rel="noopener">OpenStax Financial Accounting ↗</a> · <a class="source" href="https://www.aicpa-cima.com/resources/article/learn-what-is-tested-on-the-cpa-exam" target="_blank" rel="noopener">AICPA Exam Blueprints ↗</a></p></section>`;
+    <section class="panel padded practice"><h2>Starter material</h2><p>Each planned course and section includes original lessons and practice cases. Use the syllabus or exam blueprint to identify additional objectives to study. Topic percentages reflect the material in this workspace.</p>
+    <p class="help"><a class="source" href="https://openstax.org/details/books/principles-financial-accounting" target="_blank" rel="noopener">OpenStax Financial Accounting ↗</a> · <a class="source" href="https://www.aicpa-cima.com/resources/download/learn-what-is-tested-on-the-cpa-exam" target="_blank" rel="noopener">AICPA Exam Blueprints ↗</a></p></section>`;
 }
 function render() {
   const [page='desk',cid,tab]=location.hash.slice(1).split('/');
@@ -484,7 +497,7 @@ async function readBackup(file) {
   const notes=next.courses.reduce((sum,c)=>sum+c.notes.length,0);
   showForm('Restore this backup?',`<p>This file contains ${plural(next.courses.length,'library item')} and ${plural(notes,'note')}. Restoring replaces all data in this browser.</p>
     <p class="help">Save your current workspace first if you want to keep it.</p>${protectedData&&disk!==null?action('raw','Download original data','text-link'):action('export','Download current backup','text-link')}`,'Replace and restore',()=>{
-    if(!save(()=>expandPrinciples(next),true)) return false;
+    if(!save(()=>expandCurriculum(next),true)) return false;
     session=null;reviewScope='focus';notify('Workspace restored.');location.hash='#desk';
   });
 }
@@ -509,7 +522,9 @@ document.addEventListener('click',e=>{
     }
     case 'case': {
       const kind=Number(i);
-      session={mode:'case',scope:cid,kind,test:makeCase(kind)};
+      const selected=availableCases(cid)[kind];
+      const test=selected.exhibits ? selected : {...makeCase(kind),title:selected.title};
+      session={mode:'case',scope:cid,kind,test};
       render();$('#main').focus();break;
     }
     case 'practice': {

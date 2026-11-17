@@ -145,3 +145,6 @@ dialog::backdrop { background:#19241ea8; }
   input,textarea,select { font-size:16px; }.lesson-card,.padded,.note { padding:16px; }.tabs a { padding:9px 7px; }.actions .btn { white-space:normal; }
 }
 @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+.case-exhibit { margin-top: 14px; padding: 12px 15px; border-left: 3px solid var(--line); background: var(--paper); }
+.case-exhibit h3 { font: 650 14px var(--sans); margin-bottom: 5px; }
+#case-form select { width: 100%; }
