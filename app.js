@@ -43,7 +43,8 @@ function validTopic(t) {
     t.choices.every(s => typeof s === 'string' && s.trim()) && natural(t.correct) &&
     (t.question ? t.choices.length === 3 && t.correct < 3 && t.explanation.trim() : t.choices.length === 0 && t.correct === 0) &&
     typeof t.done === 'boolean' && (!t.due || validDate(t.due)) && natural(t.level) && t.level <= intervals.length &&
-    natural(t.attempts) && natural(t.hits) && t.hits <= t.attempts;
+    natural(t.attempts) && natural(t.hits) && t.hits <= t.attempts &&
+    ['chapter','worked','pitfall','origin'].every(field => t[field] === undefined || typeof t[field] === 'string');
 }
 function validWorkspace(data) {
   return data && data.version === 1 && Array.isArray(data.courses) && data.courses.every(c =>
@@ -53,14 +54,14 @@ function validWorkspace(data) {
     Array.isArray(c.notes) && c.notes.every(n => n && safeID(n.id) && strings(n,['title','body','date']) && validDate(n.date)) && unique(c.notes)
   ) && unique(data.courses) && (data.last === '' || data.courses.some(c => c.id === data.last));
 }
-let db = starterWorkspace(), disk = null, protectedData = false;
+let db = expandPrinciplesDepth(starterWorkspace()), disk = null, protectedData = false;
 function warn(message) { $('#warning').hidden = !message; $('#warning').textContent = message; }
 try {
   disk = localStorage.getItem(key);
   if (disk !== null) {
     const parsed = JSON.parse(disk);
     if (!validWorkspace(parsed)) throw Error('Invalid workspace');
-    db = expandCurriculum(parsed);
+    db = expandPrinciplesDepth(expandCurriculum(parsed));
   }
 } catch {
   protectedData = true;
@@ -98,6 +99,25 @@ const course = id => byId(db,id);
 const pickTopic = (data,cid,tid) => byId(data,cid).topics.find(t => t.id === tid);
 const allTopics = () => db.courses.flatMap(c => c.topics.map(t => ({c,t})));
 const countDone = c => c.topics.filter(t => t.done).length;
+const isMastered = t => t.done && t.level >= 2 && t.hits >= 1;
+const countMastered = c => c.topics.filter(isMastered).length;
+const completion = c => c.topics.length ? Math.round(100 * (c.id === 'ac-297p' ? countMastered(c) : countDone(c)) / c.topics.length) : 0;
+function schedulePractice(t, correct) {
+  t.done = true;
+  t.attempts++;
+  t.lastMiss = !correct;
+  if (correct) {
+    t.hits++;
+    if (!t.due || t.due <= day()) {
+      t.level = Math.min(t.level + 1, intervals.length);
+      t.due = day(intervals[Math.max(0,t.level-1)]);
+    }
+  } else {
+    t.level = 0;
+    t.due = day();
+  }
+}
+
 const plural = (n,word) => `${n} ${word}${n===1?'':'s'}`;
 const due = t => t.due && t.due <= day();
 const active = () => db.courses.find(c => c.status === 'In focus' && c.id === db.last) ||
@@ -121,12 +141,12 @@ function filterButtons(overview=false) {
 function card(c) {
   const style = c.type==='Exam' ? 2 : Math.max(0,db.courses.indexOf(c))%3;
   const [design,tint,tone] = [['ledger','#dce9cd','#59764e'],['bars','#f1e1c7','#946e47'],['rings','#e2deec','#776a8d']][style];
-  const pct=c.topics.length ? Math.round(countDone(c)*100/c.topics.length) : 0;
+  const pct=completion(c);
   const category = c.provider==='University of North Alabama'?'UNA course':c.provider==='U.S. CPA Exam'?'CPA exam section':c.type;
   return `<a class="course-card" href="${endpoint(c)}"><div class="cover ${design}" style="--tint:${tint};--tone:${tone}">
     <span class="eyebrow">${escapeHTML(c.code||c.type)}</span><span class="motif" aria-hidden="true"><i></i>${design==='bars'?'<i></i><i></i>':''}</span></div>
     <div class="card-body"><span class="eyebrow">${escapeHTML(category)}</span><h3>${escapeHTML(c.title)}</h3>
-    <div class="progress-line"><span>${countDone(c)} of ${plural(c.topics.length,'topic')} studied</span><span>${pct}%</span></div><span class="track"><i style="width:${pct}%"></i></span></div></a>`;
+    <div class="progress-line"><span>${c.id==='ac-297p' ? countMastered(c) + ' of ' + c.topics.length + ' concepts retained' : countDone(c) + ' of ' + plural(c.topics.length,'topic') + ' studied'}</span><span>${pct}%</span></div><span class="track"><i style="width:${pct}%"></i></span></div></a>`;
 }
 function focusPanel(c) {
   if (!c) return empty('Add your first course, exam or certification.',addItem());
@@ -157,6 +177,52 @@ function library() {
   const counts = types.filter(t=>coursesOf(t).length).map(t=>plural(coursesOf(t).length,t.toLowerCase())).join(' · ');
   return heading('My library',counts,addItem()) + `<div class="controls">${filterButtons()}<input class="search" type="search" aria-label="Search library" id="search" value="${escapeHTML(search)}" placeholder="Search library…"></div><div id="results">${libraryGrid()}</div>`;
 }
+function principlesPage(c) {
+  const chapters = principlesChapters.map(chapter => ({
+    chapter,
+    topics: c.topics.filter(t => (t.chapter || legacyPrinciplesChapters[t.id]) === chapter.id)
+  }));
+  const ungrouped = c.topics.filter(t => !t.chapter && !legacyPrinciplesChapters[t.id]);
+  if (ungrouped.length) chapters.push({chapter:{id:'custom',title:'My additional lessons',goal:'Your own study notes and questions.'},topics:ungrouped});
+  const read = countDone(c), mastered = countMastered(c), dueCount=c.topics.filter(t=>due(t)).length;
+  const tiles = `<div class="mastery-overview">
+    <div><strong>${read}</strong><span>Read or practiced</span></div>
+    <div><strong>${mastered}</strong><span>Retained in review</span></div>
+    <div><strong>${dueCount}</strong><span>Due for review</span></div>
+    <div><strong>${c.topics.length}</strong><span>Lessons</span></div>
+  </div><p class="help">Marking a lesson as read is not mastery. Answer its question correctly and retrieve it again on a later review day to make progress toward retention.</p>`;
+  const groups = chapters.map(({chapter,topics},i)=>{
+    const understood = topics.filter(isMastered).length;
+    const shouldOpen = openTopic ? topics.some(t=>t.id===openTopic) : i===0;
+    const lessons = topics.map((t,j)=>{
+      const masteredNow=isMastered(t);
+      const state=masteredNow?'Retained':due(t)?'Due for review':t.done?'In progress':'New';
+      const theory = t.worked ? t.reading.split('\n\nWhy it matters:')[0] : t.reading;
+      const details = t.worked ? `<div class="worked-box"><h4>Worked example</h4><p>${escapeHTML(t.worked)}</p></div>
+        <p class="pitfall"><strong>Common mistake:</strong> ${escapeHTML(t.pitfall||'')}</p>` : '';
+      return `<details class="lesson-card deep-lesson" id="lesson-${escapeHTML(t.id)}" ${openTopic===t.id||(!openTopic&&i===0&&j===0)?'open':''}>
+        <summary><span class="lesson-sequence">${j+1}</span><span class="lesson-title">${escapeHTML(t.title)}</span>
+        <small class="${masteredNow?'retained':''}">${state}</small></summary>
+        <div class="lesson-content"><div class="reading">${escapeHTML(theory)}</div>${details}
+        <details class="recall-box"><summary>Try active recall</summary><p>${escapeHTML(t.prompt)}</p>
+          <details class="recall-answer"><summary>Reveal model answer</summary><p>${escapeHTML(t.answer)}</p></details>
+        </details><div class="actions">
+        ${action('topic-practice','Check understanding','btn green',`data-c="${c.id}" data-t="${t.id}"`)}
+        ${action('studied',t.done?'Mark unread':'Mark read', 'btn light',`data-c="${c.id}" data-t="${t.id}"`)}
+        ${action('topic-note','Take note','text-link',`data-c="${c.id}" data-t="${t.id}"`)}
+        ${action('topic','Edit lesson','text-link',`data-c="${c.id}" data-t="${t.id}"`)}</div>
+        <p class="help">${t.attempts ? t.hits+' correct of '+t.attempts+' attempts · ' : ''}${t.due ? 'Next review '+dateLabel(t.due) : 'Not scheduled yet'}</p></div>
+      </details>`;
+    }).join('');
+    return `<details class="chapter-group" id="chapter-${chapter.id}" ${shouldOpen?'open':''}>
+      <summary><span class="chapter-index">${String(i+1).padStart(2,'0')}</span><span><strong>${escapeHTML(chapter.title)}</strong>
+      <small>${escapeHTML(chapter.goal)}</small></span><span class="chapter-count">${understood}/${topics.length} retained</span></summary>
+      <div class="chapter-inner">${lessons}</div></details>`;
+  }).join('');
+  return `<div class="section-head"><div><h2>Learning path</h2><p class="help">${chapters.length} study chapters · ${c.topics.length} lessons · ${mastered} retained</p></div>${newTopicButton(c)}</div>
+  ${tiles}<div class="chapter-list">${groups}</div><p class="help">Study chapters organize the independent learning library; check official course coverage against the
+  <a class="source" href="https://www.una.edu/business/accounting-career-program/syllabus_ac297.pdf" target="_blank" rel="noopener">UNA syllabus ↗</a>.</p>`;
+}
 function details(c,tab) {
   const meta=[c.code,c.provider,c.term,c.credits&&plural(Number(c.credits),'credit'),c.tentative&&'Tentative choice'].filter(Boolean).join(' · ');
   const sections={learn:'Learn',practice:'Practice',notes:'Notes'};
@@ -165,6 +231,7 @@ function details(c,tab) {
   let body='';
   if(tab==='notes') body=noteList(c);
   else if(tab==='practice') body=practicePage(c);
+  else if(c.id==='ac-297p') body=session?.mode==='practice'&&session.scope===c.id?studySession():principlesPage(c);
   else {
     body=`<div class="section-head"><div><h2>Study topics</h2><p class="help">${countDone(c)} of ${plural(c.topics.length,'topic')} studied</p></div>${newTopicButton(c)}</div>`;
     body+=c.topics.map((t,i)=>`<details class="lesson-card" ${t.id===openTopic||(!openTopic&&i===Math.max(0,c.topics.findIndex(x=>!x.done)))?'open':''}>
@@ -225,9 +292,7 @@ document.addEventListener('submit',event=>{
     s.test.parts.forEach(([,answer,,id],i)=>{
       const t=c.topics.find(item=>item.id===id);
       if(!t) return;
-      t.attempts++;
-      if(responses[i]===answer) {t.hits++; if(!t.due) t.due=day(1);}
-      else {t.lastMiss=true; t.due=day();t.level=0;}
+      schedulePractice(t,responses[i]===answer);
     });
     data.last=c.id;return data;
   })) return;
@@ -236,8 +301,70 @@ document.addEventListener('submit',event=>{
 });
 
 
+function practiceExtras(c) {
+  if(c.id!=='ac-297p') return '';
+  return `<section class="panel padded practice"><h2>Cumulative practice</h2>
+    <p>Interleave questions from several chapters or concentrate on lessons with errors and low confidence.</p>
+    <div class="actions" style="margin-top:14px">
+      ${action('mixed','Mixed chapters · 10 questions','btn light',`data-c="${c.id}"`)}
+      ${action('weak','Focus on weak concepts · 10 questions','btn light',`data-c="${c.id}"`)}
+    </div><h3 style="margin-top:22px">Four timed mock exams</h3>
+    <p class="help">Four different sets of approximately 18 questions, each timed to 30 minutes. Answers and explanations are revealed at the end. These are independent study simulations, not official UNA exams.</p>
+    <div class="actions" style="margin-top:12px">${[0,1,2,3].map(i=>action('mock','Mock '+(i+1),'btn light',`data-c="${c.id}" data-i="${i}"`)).join('')}</div>
+  </section>`;
+}
+function mockPage() {
+  const s=session;
+  if(s.complete) {
+    const elapsed=Math.round((s.completedAt-s.startedAt)/60000);
+    const answers=s.items.map(([cid,tid],i)=>{
+      const t=pickTopic(db,cid,tid), response=s.answers[i];
+      return `<details class="mock-result"><summary><strong>${i+1}. ${escapeHTML(t.title)}</strong> · ${response===t.correct?'Correct':response===undefined?'Not answered':'Review'}</summary>
+        <p>${escapeHTML(t.question)}</p>
+        <p><strong>Your answer:</strong> ${response===undefined?'No response':escapeHTML(t.choices[response])}</p>
+        <p><strong>Correct answer:</strong> ${escapeHTML(t.choices[t.correct])}</p><p>${escapeHTML(t.explanation)}</p></details>`;
+    }).join('');
+    return `<section class="panel padded practice"><span class="eyebrow">Mock ${s.exam+1} complete</span>
+      <h2>${s.score} / ${s.items.length} correct</h2><p>Score: ${Math.round(s.score*100/s.items.length)}% · ${elapsed} minute${elapsed===1?'':'s'} elapsed</p>
+      <p class="help">Review explanations below, then revisit the lessons you missed.</p>
+      <div class="actions" style="margin:16px 0">${action('end','Back to practice','btn green')}</div>${answers}</section>`;
+  }
+  const [cid,tid]=s.items[s.index],t=pickTopic(db,cid,tid);
+  return `<section class="panel padded practice">
+    <div class="split"><span class="eyebrow">Mock ${s.exam+1} · Question ${s.index+1} of ${s.items.length}</span>${action('end','Leave exam','text-link')}</div>
+    <div class="mock-timer" aria-live="off">Time remaining: <strong id="mock-clock">30:00</strong></div>
+    <p class="help">${escapeHTML(t.title)}</p><h2>${escapeHTML(t.question)}</h2>
+    <div class="choices">${t.choices.map((choice,i)=>action('mock-answer',escapeHTML(choice),'choice',`data-i="${i}"`)).join('')}</div>
+    <p class="help">Choose an answer to continue. Feedback is withheld until the end.</p>
+    ${action('mock-skip','Skip question','text-link')}</section>`;
+}
+function finishMock() {
+  const s=session;
+  if(!s || s.mode!=='mock' || s.complete) return;
+  const score=s.items.reduce((sum,[cid,tid],i)=>sum+(s.answers[i]===pickTopic(db,cid,tid).correct?1:0),0);
+  if(!save(data=>{
+    s.items.forEach(([cid,tid],i)=>{
+      if(s.answers[i]===undefined) return;
+      const t=pickTopic(data,cid,tid);
+      schedulePractice(t,s.answers[i]===t.correct);
+    });
+    data.last=s.scope;
+    return data;
+  })) return;
+  s.score=score;s.complete=true;s.completedAt=Date.now();render();$('#main').focus();
+}
+function answerMock(choice) {
+  const s=session;
+  if(!s || s.mode!=='mock' || s.complete) return;
+  if(Date.now()>=s.deadline) {finishMock();return;}
+  s.answers[s.index]=choice;
+  s.index++;
+  if(s.index===s.items.length) finishMock();
+  else {render();$('#main').focus();}
+}
 function practicePage(c) {
   if (session?.mode==='case' && session.scope===c.id) return casePage();
+  if (session?.mode==='mock' && session.scope===c.id) return mockPage();
   if (session?.mode==='practice' && session.scope===c.id) return studySession();
   const qs=c.topics.filter(t=>t.question), attempts=qs.reduce((n,t)=>n+t.attempts,0), hits=qs.reduce((n,t)=>n+t.hits,0);
   return `<div class="panel padded practice"><span class="tile-icon">${icon('book')}</span><h2>Practice questions</h2>
@@ -245,7 +372,7 @@ function practicePage(c) {
     <p class="help">Start with up to five questions. Missed questions come first, followed by the least practiced topics.</p>
     <div class="actions section-head">${qs.length?action('practice','Practice up to 5 '+icon('arrow'),'btn green',`data-c="${c.id}"`):newTopicButton(c)}
     ${qs.length>5?action('practice','Full set','btn light',`data-c="${c.id}" data-all="yes"`):''}
-    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>` + casePicker(c);
+    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>` + practiceExtras(c) + casePicker(c);
 }
 function reviewPage() {
   if (session?.mode==='review') return heading('Review queue')+studySession();
@@ -284,9 +411,7 @@ function recordAnswer(choice) {
   if (!s||s.shown||s.mode!=='practice') return;
   const [cid,tid]=s.items[s.index], t=pickTopic(db,cid,tid), correct=choice===t.correct;
   if (!save(data=>{
-    const item=pickTopic(data,cid,tid); item.attempts++; item.lastMiss=!correct;
-    if(correct) { item.hits++; if(!item.due) item.due=day(1); }
-    else { item.level=0; item.due=day(); }
+    const item=pickTopic(data,cid,tid); schedulePractice(item,correct);
     data.last=cid; return data;
   })) return;
   s.choice=choice; s.shown=true; if(correct) s.success++;
@@ -298,8 +423,11 @@ function rate(recalled) {
   const [cid,tid]=s.items[s.index];
   if (!save(data=>{
     const t=pickTopic(data,cid,tid);
-    t.due=day(recalled?intervals[Math.min(t.level,intervals.length-1)]:0);
-    t.level=recalled?Math.min(t.level+1,intervals.length):0;
+    t.done=true;
+    if(recalled) {
+      if(!t.due || t.due<=day()) t.level=Math.min(t.level+1,intervals.length);
+      t.due=day(intervals[Math.max(0,t.level-1)]);
+    } else { t.level=0;t.due=day();t.lastMiss=true; }
     data.last=cid; return data;
   })) return;
   if(recalled) s.success++;
@@ -446,14 +574,15 @@ function editTopic(cid,tid) {
     openTopic=t.id; notify('Topic saved.');
   });
 }
-function editNote(cid,nid) {
+function editNote(cid,nid,tid='') {
   const c=course(cid)||active(), n=c?.notes.find(item=>item.id===nid);
+  const topic=c?.topics.find(item=>item.id===tid);
   if(!c) {editItem(); return;}
   const fields=(cid?`<p class="muted">${escapeHTML(c.title)}</p>`:selectField('cid','Save in',db.courses.map(item=>[item.id,item.title]),c.id))+
-    field('title','Note title',n?.title||'','text',true)+field('body','Note',n?.body||'','textarea',true)+(n?removeButton('note',cid,nid):'');
+    field('title','Note title',n?.title||topic?.title||'','text',true)+field('body','Note',n?.body||'','textarea',true)+(n?removeButton('note',cid,nid):'');
   showForm(n?'Edit note':'Add note',fields,'Save note',v=>{
     if(!save(next=>{
-      const item=byId(next,v.cid||c.id), note={id:n?.id||uid(),title:v.title,body:v.body,date:day()};
+      const item=byId(next,v.cid||c.id), note={id:n?.id||uid(),title:v.title,body:v.body,date:day(),...(topic?.id?{topicId:topic.id}:n?.topicId?{topicId:n.topicId}:{})};
       if(n) item.notes[item.notes.findIndex(x=>x.id===nid)]=note;
       else item.notes.unshift(note);
       return next;
@@ -497,7 +626,7 @@ async function readBackup(file) {
   const notes=next.courses.reduce((sum,c)=>sum+c.notes.length,0);
   showForm('Restore this backup?',`<p>This file contains ${plural(next.courses.length,'library item')} and ${plural(notes,'note')}. Restoring replaces all data in this browser.</p>
     <p class="help">Save your current workspace first if you want to keep it.</p>${protectedData&&disk!==null?action('raw','Download original data','text-link'):action('export','Download current backup','text-link')}`,'Replace and restore',()=>{
-    if(!save(()=>expandCurriculum(next),true)) return false;
+    if(!save(()=>expandPrinciplesDepth(expandCurriculum(next)),true)) return false;
     session=null;reviewScope='focus';notify('Workspace restored.');location.hash='#desk';
   });
 }
@@ -510,6 +639,7 @@ document.addEventListener('click',e=>{
     case 'item': editItem(cid); break;
     case 'topic': editTopic(cid,tid); break;
     case 'note': editNote(cid,nid); break;
+    case 'topic-note': editNote(cid,null,tid); break;
     case 'remove': remove(kind,cid,id); break;
     case 'filter': filter=type;render();document.querySelector('.filter[aria-pressed=true]')?.focus({preventScroll:true});break;
     case 'studied': {
@@ -535,18 +665,52 @@ document.addEventListener('click',e=>{
       break;
     }
     case 'course-review': reviewScope=cid;location.hash='#review';break;
+    case 'topic-practice': {
+      const c=course(cid),t=pickTopic(db,cid,tid);
+      openTopic=tid;begin('practice',cid,[{c,t}]);break;
+    }
+    case 'mixed': {
+      const c=course(cid), rows=c.topics.filter(t=>t.question).map(t=>({c,t}));
+      for(let j=rows.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[rows[k],rows[j]]=[rows[j],rows[k]];}
+      begin('practice',cid,rows.slice(0,10));break;
+    }
+    case 'weak': {
+      const c=course(cid), rows=c.topics.filter(t=>t.question).map(t=>({c,t}));
+      rows.sort((a,b)=>Number(!!b.t.lastMiss)-Number(!!a.t.lastMiss) ||
+        (a.t.attempts ? a.t.hits/a.t.attempts : 0)-(b.t.attempts ? b.t.hits/b.t.attempts : 0) ||
+        a.t.level-b.t.level || a.t.attempts-b.t.attempts);
+      begin('practice',cid,rows.slice(0,10));break;
+    }
+    case 'mock': {
+      const c=course(cid),exam=Number(i);
+      const questions=c.topics.filter(t=>t.question).filter((t,j)=>j%4===exam);
+      session={mode:'mock',scope:cid,items:questions.map(t=>[cid,t.id]),answers:[],
+        exam,index:0,startedAt:Date.now(),deadline:Date.now()+30*60000,complete:false};
+      render();$('#main').focus();break;
+    }
+    case 'mock-answer': answerMock(Number(i));break;
+    case 'mock-skip': answerMock(undefined);break;
     case 'review': begin('review',reviewScope,getReviewItems().slice(0,10));break;
     case 'answer': recordAnswer(Number(i));break;
     case 'reveal': session.typed=$('#scratch').value.trim();session.shown=true;render();$('.feedback').scrollIntoView({block:'nearest'});break;
     case 'next': advance(); break;
     case 'recall': rate(true);break;
     case 'miss': rate(false);break;
-    case 'end': session=null;render();$('#main').focus();break;
+    case 'end':
+      if(session?.mode==='mock'&&!session.complete&&!confirm('Leave this mock exam? Unsubmitted responses will be discarded.')) break;
+      session=null;render();$('#main').focus();break;
     case 'export': download(JSON.stringify(db,null,2),`folio-backup-${day()}.json`);break;
     case 'raw': download(disk,`folio-original-${day()}.json`);break;
     case 'import': $('#import').click();break;
   }
 });
+setInterval(()=>{
+  if(session?.mode!=='mock'||session.complete) return;
+  const remaining=Math.max(0,Math.ceil((session.deadline-Date.now())/1000));
+  const clock=$('#mock-clock');
+  if(clock) clock.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
+  if(remaining===0) finishMock();
+},1000);
 prevHash=location.hash;
 render();
 
