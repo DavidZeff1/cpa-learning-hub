@@ -94,5 +94,112 @@ function starterWorkspace() {
     status: i === 0 ? 'In focus' : 'Planned', term: i === 0 ? term : '',
     credits: i < 10 ? '3' : '', tentative: code === 'ISC', topics, notes: []
   }));
-  return {version: 1, courses, last: courses[0].id};
+  return expandPrinciples({version: 1, courses, last: courses[0].id});
 }
+
+// A one-time addition to the original AC 297P starter set, also used for legacy backups.
+function expandPrinciples(workspace) {
+  const c = workspace.courses.find(item => item.id === 'ac-297p');
+  if (!c || c.principlesEdition >= 2) return workspace;
+  const topics = [
+    lesson('Closing the books',
+      'At period end, revenue and expense balances transfer into retained earnings through closing entries. Dividends reduce retained earnings separately. Assets and liabilities carry forward. A company beginning with $8,000 of retained earnings, earning $3,000 and declaring $500 of dividends ends with $10,500.',
+      'Which balances reset at year-end, and where does the period’s profit go?', 'Revenue, expense and dividend accounts reset. Profit increases retained earnings, and dividends reduce it.',
+      'Opening retained earnings are $9,000. Revenue is $8,000, expenses are $5,000 and dividends are $700. Find ending retained earnings.',
+      ['$12,000','$11,300','$16,300'],1,'Net income is $3,000. Add it to $9,000, then subtract $700. Dividends are a distribution of earnings.'),
+    lesson('Merchandising and gross profit',
+      'In a perpetual inventory system, a sale creates two entries. Record revenue at the selling price. Then debit cost of goods sold and credit inventory at cost. Selling goods costing $70 for $100 on account creates a $100 receivable and $30 gross profit.',
+      'What two entries record a credit sale of merchandise under perpetual inventory?', 'Debit Accounts Receivable and credit Sales. Debit Cost of Goods Sold and credit Inventory for the cost of the units sold.',
+      'A retailer sells goods for $900 on account. Their cost was $540. What is the immediate change in total assets?',
+      ['Increase $900','Decrease $540','Increase $360'],2,'Receivables rise $900 and inventory falls $540. The net increase equals the $360 gross profit.'),
+    lesson('Bank reconciliation',
+      'Match the bank statement to the cash ledger at the same date. Adjust the bank side for deposits in transit and outstanding checks. Adjust the book side for fees, returned customer payments and collections first reported by the bank. For example, a $10,000 bank balance plus a $600 deposit in transit less $900 outstanding checks gives $9,700 adjusted cash.',
+      'Why does an outstanding check affect the bank side of a reconciliation?', 'The company already reduced its cash ledger when it wrote the check. The bank has yet to record the payment.',
+      'The statement shows $8,000. A $500 deposit is in transit, $800 of checks are outstanding and a $40 fee is already on the statement. What is adjusted bank cash?',
+      ['$7,700','$7,660','$8,300'],0,'Add $500 and subtract $800. The bank already deducted the fee, so the company records it only on the book side.'),
+    lesson('Receivables and the allowance',
+      'Report trade receivables net of estimated credit losses. An aging schedule gives a target ending allowance. If it calls for $1,000 and the allowance already has a $200 credit, record $800 of expense. A later write-off debits the allowance and credits receivables.',
+      'Why does a write-off under the allowance method leave net receivables unchanged?', 'The write-off reduces both the gross asset and its contra-asset by the same amount.',
+      'Gross receivables are $40,000 and the allowance is $1,500. A $500 balance is written off against it. What is the new net receivable?',
+      ['$38,000','$38,500','$39,000'],1,'After the write-off, gross receivables are $39,500 and the allowance is $1,000.'),
+    lesson('Inventory cost flows',
+      'Assign the cost of goods available between units sold and units remaining. Under FIFO, the earliest costs go to cost of goods sold. If 10 units cost $4 each and 10 later units cost $5 each, selling 12 assigns $50 to cost of goods sold and leaves $40 in inventory. The two amounts reconcile to the $90 available.',
+      'When FIFO purchase costs rise, which cost layers remain in inventory?', 'The newest layers remain because FIFO charges the oldest costs to goods sold first.',
+      'A shop has 5 units at $10 and buys 8 more at $12. It then sells 7. Under FIFO, what is ending inventory?',
+      ['$72','$74','$84'],0,'Six of the $12 units remain. The $74 figure is the cost of the seven units sold.'),
+    lesson('Equity method investments',
+      'When the equity method applies, the investor starts at cost, records its share of the investee’s earnings, and reduces the investment for dividends received. Assume no basis differences or other adjustments. A 30% holding in a company earning $10,000 generates $3,000 of investment income.',
+      'Why do dividends reduce an equity method investment?', 'The investor already recognized its share of earnings. The distribution converts part of the investment balance to cash.',
+      'An equity method investment cost $20,000. The investor’s share of earnings is $3,000 and it receives $500 in dividends. Find the carrying amount.',
+      ['$20,500','$23,500','$22,500'],2,'Start with cost, add the share of earnings and subtract the dividend.'),
+    lesson('Depreciation and asset cost',
+      'Include costs necessary to bring equipment to its intended location and working condition. Straight-line depreciation spreads cost less expected residual value over useful life. Equipment costing $20,000 with $2,000 installation, $2,000 residual value and a five-year life has annual depreciation of $4,000.',
+      'Why subtract residual value when computing depreciation?', 'Residual value is the amount expected to remain at the end of useful life. Only the depreciable amount is allocated.',
+      'Equipment costs $24,000 plus $2,000 installation. Residual value is $1,000 and life is five years. What is one full year’s straight-line expense?',
+      ['$4,600','$5,000','$5,200'],1,'The installed cost is $26,000. Divide the $25,000 depreciable amount by five.'),
+    lesson('Asset disposals',
+      'Bring depreciation up to the disposal date. Subtract accumulated depreciation from original cost to get carrying amount. Compare proceeds with carrying amount. If a machine originally cost $15,000 and accumulated depreciation is $9,000, a $5,000 sale produces a $1,000 loss.',
+      'What amounts does a disposal entry remove from the ledger?', 'Remove the original asset cost and its accumulated depreciation. Record proceeds and the gain or loss needed to balance the entry.',
+      'An asset cost $50,000 and has $32,000 of accumulated depreciation at sale. It sells for $20,000. What is the result?',
+      ['$2,000 gain','$30,000 loss','$2,000 loss'],0,'The carrying amount is $18,000. Proceeds exceed it by $2,000.'),
+    lesson('Depletion and amortization',
+      'A resource consumed through extraction can use a per-unit depletion rate. Divide the depletable base by estimated recoverable units. A $60,000 base over 30,000 tons allocates $2 per ton extracted to inventory. This cost reaches expense as the extracted units are sold. A finite-lived intangible asset instead undergoes amortization over its useful life.',
+      'When do depletion costs on extracted but unsold units reach cost of goods sold?', 'Extraction assigns the depletion cost to inventory. Selling the units moves their cost into cost of goods sold.',
+      'A quarry has a $90,000 depletable base and 30,000 estimated tons. It extracts 4,000 tons and sells 3,000. How much depletion cost remains in inventory from this extraction?',
+      ['$9,000','$12,000','$3,000'],2,'The remaining 1,000 tons carry $3 of depletion cost per ton.'),
+    lesson('Accrued interest and payroll',
+      'Record interest as time passes, even when the contract postpones payment. For a $10,000 note at 6% simple annual interest, two months incur $100. For payroll, record gross wages as expense. Employee withholdings create liabilities until remitted, and the remaining net pay goes to employees.',
+      'How do gross wages, employee withholdings and cash paid fit in a payroll entry?', 'Debit wages expense for gross pay. Credit withholding liabilities and credit cash for the remaining net pay.',
+      'Gross wages are $5,000 and employee withholdings total $900. Ignoring employer payroll taxes, what expense and cash payment are recorded?',
+      ['$4,100 expense and $4,100 cash','$5,000 expense and $4,100 cash','$5,900 expense and $5,000 cash'],1,'Employees earned $5,000. The employer pays $4,100 to them and owes $900 to others.'),
+    lesson('Long-term borrowing',
+      'An installment payment can include both interest and principal. Compute interest on the opening principal for the payment period. The rest reduces the debt. An annual $2,500 payment on a $10,000 loan at 5% consists of $500 interest and $2,000 principal.',
+      'Why does the interest share of equal payments decline on an amortizing fixed-rate loan?', 'Principal outstanding falls after each payment. Applying the same periodic rate to a smaller balance produces less interest.',
+      'A loan opens at $20,000 with 6% annual interest. After one full year the borrower pays $4,000. What principal remains?',
+      ['$16,000','$17,200','$18,800'],1,'Interest is $1,200. The remaining $2,800 reduces principal.'),
+    lesson('Corporate equity',
+      'Share issues bring in contributed capital. Earnings retained in the business accumulate separately. If a corporation issues 100 shares of $1 par stock for $8 each, debit cash $800, credit common stock $100 and credit additional paid-in capital $700.',
+      'How does issuing shares for cash affect net income and total equity?', 'Total equity increases by the proceeds. A contribution from owners produces no revenue or net income.',
+      'A company issues 1,000 shares of $2 par stock for $9 each. What is the increase in additional paid-in capital?',
+      ['$2,000','$9,000','$7,000'],2,'Of the $9,000 proceeds, $2,000 is par value and $7,000 is additional paid-in capital.')
+  ];
+  const existing = new Set(c.topics.map(t => t.id));
+  c.topics.push(...topics.filter(t => !existing.has(t.id)));
+  c.principlesEdition = 2;
+  return workspace;
+}
+
+// Each case changes its figures while keeping the accounting relationships intact.
+const caseTitles = ['Month-end close', 'Inventory and gross profit', 'Bank reconciliation'];
+function makeCase(kind) {
+  const units = (low, high) => low + Math.floor(Math.random() * (high - low + 1));
+  const money = amount => '$' + amount.toLocaleString('en-US');
+  if (kind === 0) {
+    const monthly = units(8,24)*25, billed=units(6,12)*1000, wages=units(8,20)*100, collected=units(1,4)*500;
+    return {story:`On June 1, a new consulting firm pays ${money(monthly*12)} for 12 months of insurance and records a prepaid asset. In June it earns and bills ${money(billed)}, collects ${money(collected)} of those invoices, and incurs ${money(wages)} in wages. Assume one month of coverage expires and there are no other revenues or expenses.`,
+      parts:[
+        ['June insurance expense',monthly,`${money(monthly*12)} ÷ 12 = ${money(monthly)}. Only June coverage has expired.`,'adjusting-entries'],
+        ['June 30 accounts receivable',billed-collected,`Billings less collections = ${money(billed)} − ${money(collected)}. Collecting a receivable does not earn revenue again.`,'debits-and-credits'],
+        ['June net income',billed-wages-monthly,`Earned revenue less wages and insurance = ${money(billed)} − ${money(wages)} − ${money(monthly)}.`,'closing-the-books']
+      ]};
+  }
+  if (kind === 1) {
+    const first=units(6,12), oldPrice=units(8,14), newPrice=oldPrice+units(2,6), extra=units(2,6), bought=extra+units(3,8), price=newPrice+units(4,10);
+    const sold=first+extra, cost=first*oldPrice+extra*newPrice;
+    return {story:`A store opens with ${first} units at ${money(oldPrice)} each. It buys ${bought} more at ${money(newPrice)} each, then sells ${sold} units for ${money(price)} each. Use FIFO. There are no discounts, returns or other purchases.`,
+      parts:[
+        ['Cost of goods sold',cost,`The sale uses all ${first} older units at ${money(oldPrice)} and ${extra} newer units at ${money(newPrice)}.`,'inventory-cost-flows'],
+        ['Ending inventory at cost',(bought-extra)*newPrice,`The ${bought-extra} remaining units all came from the ${money(newPrice)} layer.`,'inventory-cost-flows'],
+        ['Gross profit',sold*price-cost,`Sales of ${money(sold*price)} less cost of goods sold of ${money(cost)}.`,'merchandising-and-gross-profit']
+      ]};
+  }
+  const bank=units(60,120)*100, deposit=units(4,12)*100, checks=units(3,10)*100, fee=units(2,7)*10, collection=units(3,8)*100;
+  const cash=bank+deposit-checks;
+  return {story:`The bank statement closes at ${money(bank)}. A ${money(deposit)} deposit is in transit and ${money(checks)} of checks are outstanding. The cash ledger closes at ${money(cash-collection+fee)}. The bank collected ${money(collection)} of receivables and charged a ${money(fee)} fee. Both appear only on the bank statement.`,
+    parts:[
+      ['Adjusted bank balance',cash,`Add the ${money(deposit)} deposit in transit and subtract ${money(checks)} of outstanding checks.`,'bank-reconciliation'],
+      ['Net increase to record in the cash ledger',collection-fee,`Record the ${money(collection)} collection and deduct the ${money(fee)} fee.`,'bank-reconciliation'],
+      ['Change in net income from the bank collection and fee (signed)',-fee,`The collection exchanges receivables for cash. The fee reduces income by ${money(fee)}.`,'debits-and-credits']
+    ]};
+}
+

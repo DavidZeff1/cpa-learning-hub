@@ -60,7 +60,7 @@ try {
   if (disk !== null) {
     const parsed = JSON.parse(disk);
     if (!validWorkspace(parsed)) throw Error('Invalid workspace');
-    db = parsed;
+    db = expandPrinciples(parsed);
   }
 } catch {
   protectedData = true;
@@ -172,6 +172,7 @@ function details(c,tab) {
       <div class="actions">${action('studied',t.done?'Mark unread':'Mark studied',t.done?'btn light':'btn green',`data-c="${c.id}" data-t="${t.id}"`)}
       ${action('topic','Edit topic','text-link',`data-c="${c.id}" data-t="${t.id}"`)}</div></details>`).join('');
     if(!c.topics.length) body+=empty('Add a topic with a lesson and a recall prompt to start studying.');
+    if(c.id==='ac-297p') body+=`<p class="help">Check your course coverage against the <a class="source" href="https://www.una.edu/business/accounting-career-program/syllabus_ac297.pdf" target="_blank" rel="noopener">published UNA syllabus ↗</a>.</p>`;
     if(c.provider==='U.S. CPA Exam') body+=`<p class="help">Plan further topics using the <a class="source" href="https://www.aicpa-cima.com/resources/article/learn-what-is-tested-on-the-cpa-exam" target="_blank" rel="noopener">AICPA Exam Blueprints ↗</a>.</p>`;
   }
   return heading(c.title,meta,edit)+`<span class="chip">${escapeHTML(c.status)}</span>${tabs}${body}`;
@@ -184,14 +185,54 @@ function getReviewItems() {
     return (reviewScope === 'all' || c.id===reviewScope) && (due(t)||!t.due);
   }).sort((a,b) => (a.t.due || '9999').localeCompare(b.t.due || '9999'));
 }
+
+function casePicker(c) {
+  if (c.id !== 'ac-297p') return '';
+  return `<section class="panel padded practice"><h2>Accounting cases</h2><p>Solve three connected amounts from one scenario. Each attempt uses fresh figures.</p>
+    <div class="actions" style="margin-top:14px">${caseTitles.map((title,i)=>action('case',title,'btn light',`data-i="${i}" data-c="${c.id}"`)).join('')}</div></section>`;
+}
+function casePage() {
+  const s=session, test=s.test;
+  return `<section class="panel padded practice"><div class="split"><span class="eyebrow">Accounting case</span>${action('end','Back to practice','text-link')}</div><h2>${caseTitles[s.kind]}</h2>
+    <p>${test.story}</p><form id="case-form">${test.parts.map(([label,answer,reason],i)=>{
+      const result=s.responses?s.responses[i]:null;
+      return `<label class="field">${escapeHTML(label)} ($)<input name="part${i}" type="number" step="any" required ${s.responses?`readonly value="${result}"`:''}></label>
+      ${s.responses?`<p class="feedback"><strong>${result===answer?'Correct':'Answer: '+answer.toLocaleString('en-US')}.</strong> ${escapeHTML(reason)}</p>`:''}`;
+    }).join('')}${s.responses?`<p>${s.score} of ${test.parts.length} correct.</p><div class="actions">${action('case','Try fresh figures','btn green',`data-i="${s.kind}" data-c="${s.scope}"`)}${action('end','Finish','btn light')}</div>`:'<button class="btn green">Check my work</button>'}</form></section>`;
+}
+document.addEventListener('submit',event=>{
+  if(event.target.id!=='case-form') return;
+  event.preventDefault();
+  const s=session;
+  if(!s || s.responses) return;
+  const responses=s.test.parts.map((part,i)=>event.target.elements['part'+i].valueAsNumber);
+  if(!responses.every(Number.isFinite)) return;
+  if(!save(data=>{
+    const c=byId(data,s.scope);
+    s.test.parts.forEach(([,answer,,id],i)=>{
+      const t=c.topics.find(item=>item.id===id);
+      if(!t) return;
+      t.attempts++;
+      if(responses[i]===answer) {t.hits++; if(!t.due) t.due=day(1);}
+      else {t.lastMiss=true; t.due=day();t.level=0;}
+    });
+    data.last=c.id;return data;
+  })) return;
+  s.responses=responses;s.score=s.test.parts.filter((part,i)=>part[1]===responses[i]).length;
+  render();$('#main').focus();
+});
+
+
 function practicePage(c) {
+  if (session?.mode==='case' && session.scope===c.id) return casePage();
   if (session?.mode==='practice' && session.scope===c.id) return studySession();
   const qs=c.topics.filter(t=>t.question), attempts=qs.reduce((n,t)=>n+t.attempts,0), hits=qs.reduce((n,t)=>n+t.hits,0);
   return `<div class="panel padded practice"><span class="tile-icon">${icon('book')}</span><h2>Practice questions</h2>
     <p>${plural(qs.length,'question')} available · ${hits} correct across ${plural(attempts,'attempt')}</p>
-    <p class="help">Work through each question, then check the reasoning behind the answer.</p>
-    <div class="actions section-head">${qs.length?action('practice','Start practice '+icon('arrow'),'btn green',`data-c="${c.id}"`):newTopicButton(c)}
-    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>`;
+    <p class="help">Start with up to five questions. Missed questions come first, followed by the least practiced topics.</p>
+    <div class="actions section-head">${qs.length?action('practice','Practice up to 5 '+icon('arrow'),'btn green',`data-c="${c.id}"`):newTopicButton(c)}
+    ${qs.length>5?action('practice','Full set','btn light',`data-c="${c.id}" data-all="yes"`):''}
+    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>` + casePicker(c);
 }
 function reviewPage() {
   if (session?.mode==='review') return heading('Review queue')+studySession();
@@ -230,7 +271,7 @@ function recordAnswer(choice) {
   if (!s||s.shown||s.mode!=='practice') return;
   const [cid,tid]=s.items[s.index], t=pickTopic(db,cid,tid), correct=choice===t.correct;
   if (!save(data=>{
-    const item=pickTopic(data,cid,tid); item.attempts++;
+    const item=pickTopic(data,cid,tid); item.attempts++; item.lastMiss=!correct;
     if(correct) { item.hits++; if(!item.due) item.due=day(1); }
     else { item.level=0; item.due=day(); }
     data.last=cid; return data;
@@ -443,7 +484,7 @@ async function readBackup(file) {
   const notes=next.courses.reduce((sum,c)=>sum+c.notes.length,0);
   showForm('Restore this backup?',`<p>This file contains ${plural(next.courses.length,'library item')} and ${plural(notes,'note')}. Restoring replaces all data in this browser.</p>
     <p class="help">Save your current workspace first if you want to keep it.</p>${protectedData&&disk!==null?action('raw','Download original data','text-link'):action('export','Download current backup','text-link')}`,'Replace and restore',()=>{
-    if(!save(()=>next,true)) return false;
+    if(!save(()=>expandPrinciples(next),true)) return false;
     session=null;reviewScope='focus';notify('Workspace restored.');location.hash='#desk';
   });
 }
@@ -466,9 +507,17 @@ document.addEventListener('click',e=>{
       })) {openTopic=tid;render();notify(pickTopic(db,cid,tid).done?'Marked studied. Concept ready for review.':'Marked unread.');}
       break;
     }
+    case 'case': {
+      const kind=Number(i);
+      session={mode:'case',scope:cid,kind,test:makeCase(kind)};
+      render();$('#main').focus();break;
+    }
     case 'practice': {
-      const c=course(cid), rows=c.topics.filter(t=>t.question).map(t=>({c,t})).sort((a,b)=>a.t.attempts-b.t.attempts);
-      begin('practice',cid,rows);break;
+      const c=course(cid);
+      const rows=c.topics.filter(t=>t.question).map(t=>({c,t}))
+        .sort((a,b)=>Number(!!b.t.lastMiss)-Number(!!a.t.lastMiss) || a.t.attempts-b.t.attempts);
+      begin('practice',cid,button.dataset.all ? rows : rows.slice(0,5));
+      break;
     }
     case 'course-review': reviewScope=cid;location.hash='#review';break;
     case 'review': begin('review',reviewScope,getReviewItems().slice(0,10));break;
