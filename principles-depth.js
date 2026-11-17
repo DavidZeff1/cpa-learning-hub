@@ -1,8 +1,8 @@
-// AC 297P enhanced study curriculum. Chapter grouping is a study aid, not an official UNA chapter enumeration.
+// Supplementary study material. Four cash-flow lessons belong to AC 298P, not AC 297P.
 const principlesChapters = [
   {
     "id": "foundations",
-    "title": "Accounting foundations and financial statements",
+    "title": "Welcome to the World of Accounting",
     "goal": "Understand how business events flow into the financial statements.",
     "units": [
       [
@@ -49,7 +49,7 @@ const principlesChapters = [
   },
   {
     "id": "recording",
-    "title": "Journals, ledgers and the trial balance",
+    "title": "Information Processing",
     "goal": "Record and trace transactions accurately with double-entry bookkeeping.",
     "units": [
       [
@@ -96,7 +96,7 @@ const principlesChapters = [
   },
   {
     "id": "adjustments",
-    "title": "Accruals, deferrals and adjusting entries",
+    "title": "Income Measurement",
     "goal": "Get revenue and expenses into the periods to which they belong.",
     "units": [
       [
@@ -143,7 +143,7 @@ const principlesChapters = [
   },
   {
     "id": "cycle",
-    "title": "The full accounting cycle and closing",
+    "title": "The Reporting Cycle",
     "goal": "Turn recorded transactions into complete period-end statements.",
     "units": [
       [
@@ -190,7 +190,7 @@ const principlesChapters = [
   },
   {
     "id": "merchandising",
-    "title": "Merchandising operations and gross profit",
+    "title": "Special Issues for Merchants",
     "goal": "Trace buying, selling, returns and margins for inventory businesses.",
     "units": [
       [
@@ -236,55 +236,8 @@ const principlesChapters = [
     ]
   },
   {
-    "id": "inventory",
-    "title": "Inventory counting and valuation",
-    "goal": "Assign defensible costs to inventory and cost of goods sold.",
-    "units": [
-      [
-        "Cost of goods available",
-        "For a periodic inventory system, beginning inventory plus net purchases yields cost of goods available. Subtract ending inventory to find cost of goods sold. This identity is the starting point for inventory error analysis.",
-        "Beginning inventory $4,000, net purchases $22,000, ending inventory $5,500: COGS is $20,500.",
-        "Ending inventory is subtracted, not added, when computing COGS.",
-        "What is COGS if available costs are $26,000 and ending inventory $5,500?",
-        "$31,500|$20,500|$26,000",
-        1,
-        "26,000 − 5,500 = 20,500."
-      ],
-      [
-        "FIFO layers",
-        "FIFO assumes oldest purchase costs flow into COGS first; recent costs remain in ending inventory. The cost-flow assumption need not represent physical movement. Under periodic and perpetual FIFO the ending amounts agree for the same transactions.",
-        "Buy 10 units at $4 and 10 at $6; sell 12. FIFO COGS is 10 × $4 + 2 × $6 = $52; ending inventory 8 × $6 = $48.",
-        "Do not price all units sold at the latest purchase price.",
-        "FIFO COGS on 12 units after buying 10 at $4 and 10 at $6?",
-        "$72|$48|$52",
-        2,
-        "The first ten cost $4 each and the next two cost $6."
-      ],
-      [
-        "Weighted-average cost",
-        "Weighted-average costing assigns a blended unit cost to goods available. Under periodic accounting use total cost divided by total units available; a moving average in perpetual accounting is recalculated after purchases.",
-        "Five units at $10 plus five at $14 produce total cost $120 across ten units, or $12 each. Sale of six uses $72 COGS; four remain at $48.",
-        "Don't average the two invoice totals without accounting for unit quantities.",
-        "Ten units cost $120 in total. Sell six under periodic weighted average. COGS?",
-        "$60|$72|$84",
-        1,
-        "The weighted unit cost is $12; multiply by six."
-      ],
-      [
-        "LIFO and net realizable value",
-        "US GAAP permits LIFO, which sends recent costs to COGS; IFRS does not permit LIFO. Inventory is also assessed for write-downs when value declines. For inventories measured at lower of cost and net realizable value, NRV is estimated selling price less costs of completion and disposal.",
-        "Goods cost $900 but their estimated net realizable value is $780. For an applicable lower-of-cost-and-NRV category, write down $120.",
-        "Not all inventory categories use identical US GAAP valuation rules, particularly LIFO and retail inventory methods.",
-        "Cost $900; NRV $780 under lower-of-cost-and-NRV. Report:",
-        "$900|$780|$1,680",
-        1,
-        "Use the lower of cost and net realizable value under the stated method."
-      ]
-    ]
-  },
-  {
     "id": "cash",
-    "title": "Cash, internal controls and bank reconciliations",
+    "title": "Cash and Highly-Liquid Investments",
     "goal": "Safeguard cash and explain differences between ledger and bank.",
     "units": [
       [
@@ -331,7 +284,7 @@ const principlesChapters = [
   },
   {
     "id": "receivables",
-    "title": "Receivables and credit losses",
+    "title": "Accounts Receivable",
     "goal": "Estimate collectible receivables and avoid double-counting write-offs.",
     "units": [
       [
@@ -377,8 +330,82 @@ const principlesChapters = [
     ]
   },
   {
+    "id": "inventory",
+    "title": "Inventory",
+    "goal": "Assign defensible costs to inventory and cost of goods sold.",
+    "units": [
+      [
+        "Cost of goods available",
+        "For a periodic inventory system, beginning inventory plus net purchases yields cost of goods available. Subtract ending inventory to find cost of goods sold. This identity is the starting point for inventory error analysis.",
+        "Beginning inventory $4,000, net purchases $22,000, ending inventory $5,500: COGS is $20,500.",
+        "Ending inventory is subtracted, not added, when computing COGS.",
+        "What is COGS if available costs are $26,000 and ending inventory $5,500?",
+        "$31,500|$20,500|$26,000",
+        1,
+        "26,000 − 5,500 = 20,500."
+      ],
+      [
+        "FIFO layers",
+        "FIFO assumes oldest purchase costs flow into COGS first; recent costs remain in ending inventory. The cost-flow assumption need not represent physical movement. Under periodic and perpetual FIFO the ending amounts agree for the same transactions.",
+        "Buy 10 units at $4 and 10 at $6; sell 12. FIFO COGS is 10 × $4 + 2 × $6 = $52; ending inventory 8 × $6 = $48.",
+        "Do not price all units sold at the latest purchase price.",
+        "FIFO COGS on 12 units after buying 10 at $4 and 10 at $6?",
+        "$72|$48|$52",
+        2,
+        "The first ten cost $4 each and the next two cost $6."
+      ],
+      [
+        "Weighted-average cost",
+        "Weighted-average costing assigns a blended unit cost to goods available. Under periodic accounting use total cost divided by total units available; a moving average in perpetual accounting is recalculated after purchases.",
+        "Five units at $10 plus five at $14 produce total cost $120 across ten units, or $12 each. Sale of six uses $72 COGS; four remain at $48.",
+        "Don't average the two invoice totals without accounting for unit quantities.",
+        "Ten units cost $120 in total. Sell six under periodic weighted average. COGS?",
+        "$60|$72|$84",
+        1,
+        "The weighted unit cost is $12; multiply by six."
+      ],
+      [
+        "LIFO and net realizable value",
+        "US GAAP permits LIFO, which sends recent costs to COGS; IFRS does not permit LIFO. Inventory is also assessed for write-downs when value declines. For inventories measured at lower of cost and net realizable value, NRV is estimated selling price less costs of completion and disposal.",
+        "Goods cost $900 but their estimated net realizable value is $780. For an applicable lower-of-cost-and-NRV category, write down $120.",
+        "Not all inventory categories use identical US GAAP valuation rules, particularly LIFO and retail inventory methods.",
+        "Cost $900; NRV $780 under lower-of-cost-and-NRV. Report:",
+        "$900|$780|$1,680",
+        1,
+        "Use the lower of cost and net realizable value under the stated method."
+      ]
+    ]
+  },
+  {
+    "id": "investments",
+    "title": "Long-Term Investments",
+    "goal": "Understand common measurement and cost-allocation patterns.",
+    "units": [
+      [
+        "Equity method mechanics",
+        "The equity method generally reflects significant influence. Begin at acquisition cost, add the investor's share of investee income, subtract dividends and consider basis differences and impairment when applicable. Dividends are not additional income under the basic method.",
+        "Investment initially $50,000, 25% share of $20,000 income, $2,000 cash dividend received: ending investment = $53,000.",
+        "Do not record dividend as new income after recognizing a share of profit.",
+        "Cost $50,000 + $5,000 share income − $2,000 dividend =:",
+        "$55,000|$53,000|$52,000",
+        1,
+        "Equity-method dividends reduce the investment account."
+      ],
+      [
+        "Passive equity holdings",
+        "Investments without consolidation or equity-method accounting generally follow applicable fair-value measurement rules. Changes in fair value can affect earnings, depending on the relevant standard and instrument. Document investment type and measurement before posting gains.",
+        "Shares bought for $5,000 are worth $5,600 at year-end under a fair-value-through-earnings rule; recognize $600 unrealized gain.",
+        "A quoted higher market price is not cash received from selling the shares.",
+        "Fair value rises from $5,000 to $5,600; change:",
+        "$600 gain|$600 loss|$5,600 dividend",
+        0,
+        "The value increased by $600 without a sale."
+      ]
+    ]
+  },
+  {
     "id": "assets",
-    "title": "Property, equipment and depreciation",
+    "title": "Property, Plant and Equipment",
     "goal": "Measure asset cost and allocate it over use and disposal.",
     "units": [
       [
@@ -424,29 +451,49 @@ const principlesChapters = [
     ]
   },
   {
-    "id": "investments",
-    "title": "Investments, intangibles and natural resources",
-    "goal": "Understand common measurement and cost-allocation patterns.",
+    "id": "advanced-assets",
+    "title": "Advanced PP&E, Natural Resources and Intangibles",
+    "goal": "Handle disposals, depletion, intangible assets and unusual long-lived-asset costs.",
     "units": [
       [
-        "Equity method mechanics",
-        "The equity method generally reflects significant influence. Begin at acquisition cost, add the investor's share of investee income, subtract dividends and consider basis differences and impairment when applicable. Dividends are not additional income under the basic method.",
-        "Investment initially $50,000, 25% share of $20,000 income, $2,000 cash dividend received: ending investment = $53,000.",
-        "Do not record dividend as new income after recognizing a share of profit.",
-        "Cost $50,000 + $5,000 share income − $2,000 dividend =:",
-        "$55,000|$53,000|$52,000",
+        "Recognizing long-lived asset impairment",
+        "When long-lived assets show indicators of impairment, test them under the applicable US GAAP model. For long-lived assets held and used, first compare carrying amount with undiscounted expected cash flows, then measure an impairment loss using fair value if the asset group is not recoverable. Rules differ for goodwill and assets held for sale.",
+        "An asset group has $50,000 carrying amount and $43,000 expected undiscounted cash flows; its fair value is $38,000. Under the held-and-used model, the $12,000 shortfall from carrying amount to fair value is the impairment loss.",
+        "Do not calculate a held-and-used impairment as carrying value minus undiscounted cash flows; these cash flows are the recoverability screen.",
+        "Carrying $50,000, undiscounted cash $43,000 and fair value $38,000. Loss?",
+        "$7,000|$12,000|$0",
         1,
-        "Equity-method dividends reduce the investment account."
+        "Recoverability fails; the loss is carrying amount less fair value: $50,000 − $38,000."
       ],
       [
-        "Passive equity holdings",
-        "Investments without consolidation or equity-method accounting generally follow applicable fair-value measurement rules. Changes in fair value can affect earnings, depending on the relevant standard and instrument. Document investment type and measurement before posting gains.",
-        "Shares bought for $5,000 are worth $5,600 at year-end under a fair-value-through-earnings rule; recognize $600 unrealized gain.",
-        "A quoted higher market price is not cash received from selling the shares.",
-        "Fair value rises from $5,000 to $5,600; change:",
-        "$600 gain|$600 loss|$5,600 dividend",
+        "Acquisition and asset retirement obligations",
+        "Some long-lived assets impose legally enforceable retirement obligations. When recognition criteria apply, record the asset retirement obligation at fair value and add the same amount to the carrying cost of the associated asset, followed by depreciation of the asset component and accretion of the liability.",
+        "A mining property purchase costs $120,000 and a qualifying asset retirement obligation is initially measured at $15,000. The related asset's initial recorded cost includes $135,000 before other adjustments.",
+        "Not every projected cleanup cost qualifies immediately; identify the legal obligation and proper measurement.",
+        "Purchase $120,000 and qualifying retirement liability $15,000. Initial asset includes:",
+        "$105,000|$120,000|$135,000",
+        2,
+        "The initial retirement-cost asset is added to acquisition cost."
+      ],
+      [
+        "Disposal of fixed assets",
+        "Bring accumulated depreciation current through the disposal date. Remove original cost and accumulated depreciation, recognize any proceeds and the difference as gain or loss. The gain is not sales revenue from ordinary goods.",
+        "An asset cost $40,000, with $27,000 accumulated depreciation at the sale date, and sells for $11,000. Book value $13,000, loss $2,000.",
+        "Comparing proceeds only to original cost overstates losses.",
+        "Sale of asset book value $13,000 for $11,000 creates:",
+        "$2,000 loss|$2,000 gain|$13,000 expense",
         0,
-        "The value increased by $600 without a sale."
+        "Proceeds are $2,000 less than carrying amount."
+      ],
+      [
+        "Patents, goodwill and indefinite life",
+        "Purchased patents with finite economic lives are amortized, generally over the shorter applicable useful period. Goodwill acquired in a business combination is not routinely amortized under standard public-company US GAAP but is assessed for impairment. Internally generated goodwill is not recognized as an asset.",
+        "A purchased patent costs $90,000 and has a nine-year remaining useful economic life with no residual value: straight-line amortization is $10,000 per year.",
+        "Do not confuse legally available years with estimated economically useful years.",
+        "Patent cost $90,000, useful life nine years. Annual amortization:",
+        "$90,000|$10,000|$9,000",
+        1,
+        "Allocate the $90,000 finite-life cost over nine years."
       ],
       [
         "Finite-life intangibles",
@@ -472,7 +519,7 @@ const principlesChapters = [
   },
   {
     "id": "current-liabilities",
-    "title": "Current liabilities and payroll",
+    "title": "Current Liabilities and Employer Obligations",
     "goal": "Recognize near-term obligations, payroll withholdings and accruals.",
     "units": [
       [
@@ -519,7 +566,7 @@ const principlesChapters = [
   },
   {
     "id": "debt",
-    "title": "Long-term notes and bonds",
+    "title": "Long-Term Obligations",
     "goal": "Connect borrowing proceeds, interest, amortization and principal repayment.",
     "units": [
       [
@@ -566,7 +613,7 @@ const principlesChapters = [
   },
   {
     "id": "equity",
-    "title": "Corporations, stock and retained earnings",
+    "title": "Corporate Equity Accounting",
     "goal": "Classify contributions, distributions and equity transactions.",
     "units": [
       [
@@ -610,54 +657,49 @@ const principlesChapters = [
         "Each old share becomes two; total shares double."
       ]
     ]
-  },
-  {
-    "id": "cashflows",
-    "title": "Cash flows, ratios and integrated review",
-    "goal": "Connect the statements and assess financial performance.",
-    "units": [
-      [
-        "Operating cash flows indirect method",
-        "Begin with net income, reverse noncash items such as depreciation, and adjust for changes in working-capital accounts. In general, increases in operating assets reduce cash flow; increases in operating liabilities increase it, subject to account-specific exceptions.",
-        "Net income $30,000, depreciation $4,000, A/R increases $2,500 and A/P increases $1,200: cash from operations = $32,700.",
-        "An increase in receivables is usually a deduction, not an addition, in the indirect method.",
-        "30,000 + 4,000 − 2,500 + 1,200 equals:",
-        "$32,700|$37,700|$27,300",
-        0,
-        "Reverse noncash depreciation, then adjust both working-capital changes."
-      ],
-      [
-        "Investing and financing cash flows",
-        "Investing often includes purchases and sales of long-lived assets; financing often includes issuing or repaying debt or shares and paying cash dividends under US GAAP. Financing principal and interest expense are not automatically the same cash-flow category.",
-        "Company borrows $25,000 from a bank and buys $18,000 of equipment for cash: financing inflow $25,000, investing outflow $18,000.",
-        "Buying equipment is not an operating expense merely because it uses cash.",
-        "Cash purchase of $18,000 equipment appears as:",
-        "Investing outflow|Financing outflow|Operating revenue",
-        0,
-        "It is acquisition of a long-lived operating asset."
-      ],
-      [
-        "Liquidity and profitability ratios",
-        "Current ratio = current assets/current liabilities; gross margin = gross profit/net sales; return measures connect profit with an investment base. Ratios need comparisons over time and context; one number alone is not a verdict.",
-        "Current assets $60,000 and current liabilities $30,000 give a 2.0 current ratio. This is not proof every asset can immediately be converted to cash.",
-        "A high ratio can mask overdue or uncollectible receivables and slow inventory.",
-        "Current assets $60,000, liabilities $30,000. Current ratio:",
-        "0.5|2.0|30,000",
-        1,
-        "60,000 ÷ 30,000 = 2."
-      ],
-      [
-        "Integrated error diagnosis",
-        "Use the accounting equation, account balances and statement links to diagnose errors. An inventory overstatement reduces COGS and inflates profit; an unrecorded wage payable understates expenses and liabilities. Follow an error through all affected reports.",
-        "Omit $700 earned but unpaid December wages: December expense is understated $700, profit overstated $700 and liabilities understated $700.",
-        "A trial balance can still balance perfectly when both halves of an adjusting entry are missing.",
-        "Omitting $700 accrued wages causes December income to be:",
-        "Understated $700|Unchanged|Overstated $700",
-        2,
-        "A missing expense inflates net income; payable is also too low."
-      ]
-    ]
   }
+];
+const principlesTwoBonus = [
+  [
+    "Operating cash flows indirect method",
+    "Begin with net income, reverse noncash items such as depreciation, and adjust for changes in working-capital accounts. In general, increases in operating assets reduce cash flow; increases in operating liabilities increase it, subject to account-specific exceptions.",
+    "Net income $30,000, depreciation $4,000, A/R increases $2,500 and A/P increases $1,200: cash from operations = $32,700.",
+    "An increase in receivables is usually a deduction, not an addition, in the indirect method.",
+    "30,000 + 4,000 − 2,500 + 1,200 equals:",
+    "$32,700|$37,700|$27,300",
+    0,
+    "Reverse noncash depreciation, then adjust both working-capital changes."
+  ],
+  [
+    "Investing and financing cash flows",
+    "Investing often includes purchases and sales of long-lived assets; financing often includes issuing or repaying debt or shares and paying cash dividends under US GAAP. Financing principal and interest expense are not automatically the same cash-flow category.",
+    "Company borrows $25,000 from a bank and buys $18,000 of equipment for cash: financing inflow $25,000, investing outflow $18,000.",
+    "Buying equipment is not an operating expense merely because it uses cash.",
+    "Cash purchase of $18,000 equipment appears as:",
+    "Investing outflow|Financing outflow|Operating revenue",
+    0,
+    "It is acquisition of a long-lived operating asset."
+  ],
+  [
+    "Liquidity and profitability ratios",
+    "Current ratio = current assets/current liabilities; gross margin = gross profit/net sales; return measures connect profit with an investment base. Ratios need comparisons over time and context; one number alone is not a verdict.",
+    "Current assets $60,000 and current liabilities $30,000 give a 2.0 current ratio. This is not proof every asset can immediately be converted to cash.",
+    "A high ratio can mask overdue or uncollectible receivables and slow inventory.",
+    "Current assets $60,000, liabilities $30,000. Current ratio:",
+    "0.5|2.0|30,000",
+    1,
+    "60,000 ÷ 30,000 = 2."
+  ],
+  [
+    "Integrated error diagnosis",
+    "Use the accounting equation, account balances and statement links to diagnose errors. An inventory overstatement reduces COGS and inflates profit; an unrecorded wage payable understates expenses and liabilities. Follow an error through all affected reports.",
+    "Omit $700 earned but unpaid December wages: December expense is understated $700, profit overstated $700 and liabilities understated $700.",
+    "A trial balance can still balance perfectly when both halves of an adjusting entry are missing.",
+    "Omitting $700 accrued wages causes December income to be:",
+    "Understated $700|Unchanged|Overstated $700",
+    2,
+    "A missing expense inflates net income; payable is also too low."
+  ]
 ];
 const legacyPrinciplesChapters = {
   "the-accounting-equation": "foundations",
@@ -670,31 +712,38 @@ const legacyPrinciplesChapters = {
   "inventory-cost-flows": "inventory",
   "equity-method-investments": "investments",
   "depreciation-and-asset-cost": "assets",
-  "asset-disposals": "assets",
-  "depletion-and-amortization": "investments",
+  "asset-disposals": "advanced-assets",
+  "depletion-and-amortization": "advanced-assets",
   "accrued-interest-and-payroll": "current-liabilities",
   "long-term-borrowing": "debt",
   "corporate-equity": "equity"
 };
+function depthLesson(record, chapterId) {
+  const [title,theory,worked,pitfall,question,answers,correct,explanation]=record;
+  const t=lesson(title,theory + '\n\nWhy it matters: ' + worked + '\n\nCommon mistake: ' + pitfall,
+    'Without notes, explain ' + title.toLowerCase() + ', and solve the worked example.',
+    theory + '\n' + worked,question,answers.split('|'),correct,explanation);
+  t.chapter=chapterId;t.worked=worked;t.pitfall=pitfall;t.origin='depth-1';
+  return t;
+}
 function expandPrinciplesDepth(workspace) {
-  const course = workspace.courses.find(c => c.id === 'ac-297p');
-  if (!course) return workspace;
-  const seen = new Set(course.topics.map(t => t.id));
-  for (const chapter of principlesChapters) {
-    for (const [title,theory,worked,pitfall,question,answers,correct,explanation] of chapter.units) {
-      const t = lesson(title,theory + '\n\nWhy it matters: ' + worked + '\n\nCommon mistake: ' + pitfall,
-        'Without notes, explain ' + title.toLowerCase() + ', and solve the worked example.',
-        theory + '\n' + worked, question, answers.split('|'), correct, explanation);
-      t.chapter = chapter.id;
-      t.worked = worked;
-      t.pitfall = pitfall;
-      t.origin = 'depth-1';
-      if (!seen.has(t.id)) { course.topics.push(t); seen.add(t.id); }
+  const c=workspace.courses.find(item=>item.id==='ac-297p');
+  if(c) {
+    const seen=new Set(c.topics.map(t=>t.id));
+    for(const chapter of principlesChapters) for(const record of chapter.units) {
+      const t=depthLesson(record,chapter.id);
+      if(!seen.has(t.id)) {c.topics.push(t);seen.add(t.id);}
+    }
+    for(const t of c.topics) if(!t.chapter && legacyPrinciplesChapters[t.id]) t.chapter=legacyPrinciplesChapters[t.id];
+    c.depthEdition=2;
+  }
+  const next=workspace.courses.find(item=>item.id==='ac-298p');
+  if(next) {
+    const seen=new Set(next.topics.map(t=>t.id));
+    for(const record of principlesTwoBonus) {
+      const t=depthLesson(record,'financial-analysis');
+      if(!seen.has(t.id)) {next.topics.push(t);seen.add(t.id);}
     }
   }
-  for (const t of course.topics) {
-    if (!t.chapter && legacyPrinciplesChapters[t.id]) t.chapter = legacyPrinciplesChapters[t.id];
-  }
-  course.depthEdition = 1;
   return workspace;
 }
