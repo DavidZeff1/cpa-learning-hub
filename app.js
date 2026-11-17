@@ -300,6 +300,67 @@ document.addEventListener('submit',event=>{
 });
 
 
+function practiceExtras(c) {
+  if(c.id!=='ac-297p') return '';
+  return `<section class="panel padded practice"><h2>Cumulative practice</h2>
+    <p>Interleave questions from several chapters or concentrate on lessons with errors and low confidence.</p>
+    <div class="actions" style="margin-top:14px">
+      ${action('mixed','Mixed chapters · 10 questions','btn light',`data-c="${c.id}"`)}
+      ${action('weak','Focus on weak concepts · 10 questions','btn light',`data-c="${c.id}"`)}
+    </div><h3 style="margin-top:22px">Four timed mock exams</h3>
+    <p class="help">Four different sets of approximately 18 questions, each timed to 30 minutes. Answers and explanations are revealed at the end. These are independent study simulations, not official UNA exams.</p>
+    <div class="actions" style="margin-top:12px">${[0,1,2,3].map(i=>action('mock','Mock '+(i+1),'btn light',`data-c="${c.id}" data-i="${i}"`)).join('')}</div>
+  </section>`;
+}
+function mockPage() {
+  const s=session;
+  if(s.complete) {
+    const elapsed=Math.round((s.completedAt-s.startedAt)/60000);
+    const answers=s.items.map(([cid,tid],i)=>{
+      const t=pickTopic(db,cid,tid), response=s.answers[i];
+      return `<details class="mock-result"><summary><strong>${i+1}. ${escapeHTML(t.title)}</strong> · ${response===t.correct?'Correct':response===undefined?'Not answered':'Review'}</summary>
+        <p>${escapeHTML(t.question)}</p>
+        <p><strong>Your answer:</strong> ${response===undefined?'No response':escapeHTML(t.choices[response])}</p>
+        <p><strong>Correct answer:</strong> ${escapeHTML(t.choices[t.correct])}</p><p>${escapeHTML(t.explanation)}</p></details>`;
+    }).join('');
+    return `<section class="panel padded practice"><span class="eyebrow">Mock ${s.exam+1} complete</span>
+      <h2>${s.score} / ${s.items.length} correct</h2><p>Score: ${Math.round(s.score*100/s.items.length)}% · ${elapsed} minute${elapsed===1?'':'s'} elapsed</p>
+      <p class="help">Review explanations below, then revisit the lessons you missed.</p>
+      <div class="actions" style="margin:16px 0">${action('end','Back to practice','btn green')}</div>${answers}</section>`;
+  }
+  const [cid,tid]=s.items[s.index],t=pickTopic(db,cid,tid);
+  return `<section class="panel padded practice">
+    <div class="split"><span class="eyebrow">Mock ${s.exam+1} · Question ${s.index+1} of ${s.items.length}</span>${action('end','Leave exam','text-link')}</div>
+    <div class="mock-timer" aria-live="off">Time remaining: <strong id="mock-clock">30:00</strong></div>
+    <p class="help">${escapeHTML(t.title)}</p><h2>${escapeHTML(t.question)}</h2>
+    <div class="choices">${t.choices.map((choice,i)=>action('mock-answer',escapeHTML(choice),'choice',`data-i="${i}"`)).join('')}</div>
+    <p class="help">Choose an answer to continue. Feedback is withheld until the end.</p>
+    ${action('mock-skip','Skip question','text-link')}</section>`;
+}
+function finishMock() {
+  const s=session;
+  if(!s || s.mode!=='mock' || s.complete) return;
+  const score=s.items.reduce((sum,[cid,tid],i)=>sum+(s.answers[i]===pickTopic(db,cid,tid).correct?1:0),0);
+  if(!save(data=>{
+    s.items.forEach(([cid,tid],i)=>{
+      if(s.answers[i]===undefined) return;
+      const t=pickTopic(data,cid,tid);
+      schedulePractice(t,s.answers[i]===t.correct);
+    });
+    data.last=s.scope;
+    return data;
+  })) return;
+  s.score=score;s.complete=true;s.completedAt=Date.now();render();$('#main').focus();
+}
+function answerMock(choice) {
+  const s=session;
+  if(!s || s.mode!=='mock' || s.complete) return;
+  if(Date.now()>=s.deadline) {finishMock();return;}
+  s.answers[s.index]=choice;
+  s.index++;
+  if(s.index===s.items.length) finishMock();
+  else {render();$('#main').focus();}
+}
 function practicePage(c) {
   if (session?.mode==='case' && session.scope===c.id) return casePage();
   if (session?.mode==='mock' && session.scope===c.id) return mockPage();
@@ -310,7 +371,7 @@ function practicePage(c) {
     <p class="help">Start with up to five questions. Missed questions come first, followed by the least practiced topics.</p>
     <div class="actions section-head">${qs.length?action('practice','Practice up to 5 '+icon('arrow'),'btn green',`data-c="${c.id}"`):newTopicButton(c)}
     ${qs.length>5?action('practice','Full set','btn light',`data-c="${c.id}" data-all="yes"`):''}
-    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>` + casePicker(c);
+    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>` + practiceExtras(c) + casePicker(c);
 }
 function reviewPage() {
   if (session?.mode==='review') return heading('Review queue')+studySession();
@@ -601,18 +662,52 @@ document.addEventListener('click',e=>{
       break;
     }
     case 'course-review': reviewScope=cid;location.hash='#review';break;
+    case 'topic-practice': {
+      const c=course(cid),t=pickTopic(db,cid,tid);
+      openTopic=tid;begin('practice',cid,[{c,t}]);break;
+    }
+    case 'mixed': {
+      const c=course(cid), rows=c.topics.filter(t=>t.question).map(t=>({c,t}));
+      for(let j=rows.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[rows[k],rows[j]]=[rows[j],rows[k]];}
+      begin('practice',cid,rows.slice(0,10));break;
+    }
+    case 'weak': {
+      const c=course(cid), rows=c.topics.filter(t=>t.question).map(t=>({c,t}));
+      rows.sort((a,b)=>Number(!!b.t.lastMiss)-Number(!!a.t.lastMiss) ||
+        (a.t.attempts ? a.t.hits/a.t.attempts : 0)-(b.t.attempts ? b.t.hits/b.t.attempts : 0) ||
+        a.t.level-b.t.level || a.t.attempts-b.t.attempts);
+      begin('practice',cid,rows.slice(0,10));break;
+    }
+    case 'mock': {
+      const c=course(cid),exam=Number(i);
+      const questions=c.topics.filter(t=>t.question).filter((t,j)=>j%4===exam);
+      session={mode:'mock',scope:cid,items:questions.map(t=>[cid,t.id]),answers:[],
+        exam,index:0,startedAt:Date.now(),deadline:Date.now()+30*60000,complete:false};
+      render();$('#main').focus();break;
+    }
+    case 'mock-answer': answerMock(Number(i));break;
+    case 'mock-skip': answerMock(undefined);break;
     case 'review': begin('review',reviewScope,getReviewItems().slice(0,10));break;
     case 'answer': recordAnswer(Number(i));break;
     case 'reveal': session.typed=$('#scratch').value.trim();session.shown=true;render();$('.feedback').scrollIntoView({block:'nearest'});break;
     case 'next': advance(); break;
     case 'recall': rate(true);break;
     case 'miss': rate(false);break;
-    case 'end': session=null;render();$('#main').focus();break;
+    case 'end':
+      if(session?.mode==='mock'&&!session.complete&&!confirm('Leave this mock exam? Unsubmitted responses will be discarded.')) break;
+      session=null;render();$('#main').focus();break;
     case 'export': download(JSON.stringify(db,null,2),`folio-backup-${day()}.json`);break;
     case 'raw': download(disk,`folio-original-${day()}.json`);break;
     case 'import': $('#import').click();break;
   }
 });
+setInterval(()=>{
+  if(session?.mode!=='mock'||session.complete) return;
+  const remaining=Math.max(0,Math.ceil((session.deadline-Date.now())/1000));
+  const clock=$('#mock-clock');
+  if(clock) clock.textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0');
+  if(remaining===0) finishMock();
+},1000);
 prevHash=location.hash;
 render();
 
