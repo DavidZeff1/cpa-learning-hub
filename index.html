@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#263f35">
+  <script>try{const t=localStorage.getItem('folio-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch{}</script>
   <title>Folio · Study desk</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23263f35'/%3E%3Cpath d='m5 9 10 3v14L5 22zm22 0-10 3v14l10-4z' fill='%23e9f2c3'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
@@ -19,7 +20,7 @@
   <aside class="sidebar" id="sidebar">
     <a class="brand" href="#desk" aria-label="Folio study desk"><span class="brandmark" aria-hidden="true"><i></i><i></i><i></i></span>Folio<span class="brand-dot">.</span></a>
     <nav id="navigation" aria-label="Workspace"></nav>
-    <div class="side-bottom"><a href="#backup" data-nav="backup"><span data-icon="archive"></span>Data &amp; backup</a><div class="local"><i></i>Local workspace</div></div>
+    <div class="side-bottom"><button type="button" class="theme-toggle" id="theme-toggle"><span data-icon="theme"></span>Theme<small id="theme-label">System</small></button><a href="#backup" data-nav="backup"><span data-icon="archive"></span>Data &amp; backup</a><div class="local"><i></i>Local workspace</div></div>
   </aside>
   <button class="scrim" aria-label="Close menu" hidden></button>
   <div class="workspace">

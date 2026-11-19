@@ -13,7 +13,7 @@ const icons = {
   calendar:'M3 6h18v15H3z M7 3v6 M17 3v6 M3 11h18',
   menu:'M3 6h18 M3 12h18 M3 18h18', x:'M5 5l14 14 M19 5L5 19', cards:'M3 5h15v11H3z M7 19h14V9',
   book:'M12 6Q7 3 2 5v14q6-2 10 1 5-3 10-1V5q-5-2-10 1z M12 6v14',
-  check:'M4 12l5 5L20 6', edit:'M4 20l4-1L20 7l-3-3L5 16z', download:'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5'
+  theme:'M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z', check:'M4 12l5 5L20 6', edit:'M4 20l4-1L20 7l-3-3L5 16z', download:'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5'
 };
 function icon(name) { return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[name]}"/></svg>`; }
 document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
@@ -505,6 +505,22 @@ function toggleMenu(open) {
   $('#menu').setAttribute('aria-expanded',String(open));
   if(open) $('.brand').focus(); else if(matchMedia('(max-width:820px)').matches) $('#menu').focus();
 }
+// Theme: System (follows the device), Light or Dark. Stored per browser; the page renders correctly without it.
+const themes=['system','light','dark'];
+function applyTheme(t) {
+  if(t==='system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme=t;
+  $('#theme-label').textContent=t[0].toUpperCase()+t.slice(1);
+  $('#theme-toggle').setAttribute('aria-label',`Theme: ${t}. Click to change.`);
+}
+let theme='system';
+try { theme=localStorage.getItem('folio-theme')||'system'; } catch {}
+if(!themes.includes(theme)) theme='system';
+applyTheme(theme);
+$('#theme-toggle').onclick=()=>{
+  theme=themes[(themes.indexOf(theme)+1)%themes.length]; applyTheme(theme);
+  try { if(theme==='system') localStorage.removeItem('folio-theme'); else localStorage.setItem('folio-theme',theme); } catch {}
+  notify(`Theme: ${$('#theme-label').textContent}`);
+};
 $('#menu').onclick=()=>toggleMenu(true);
 $('.scrim').onclick=()=>toggleMenu(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.sidebar').classList.contains('open')) toggleMenu(false);});
