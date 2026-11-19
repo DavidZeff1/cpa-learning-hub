@@ -37,6 +37,8 @@ The **Practice** tab adds unlimited **skill drills** with fresh numbers each tim
 
 The Learn tab also shows a **lesson map** (every lesson as a square, coloured by progress; click to jump to it). Lessons can be linked directly as `#course/<course>/learn/<lesson-id>`. During practice quizzes, press 1–3 to answer and Enter to continue; missed questions link back to their lesson and show its common mistake.
 
+**Dark mode** follows your device setting by default. Use **Theme** at the bottom of the sidebar to switch between System, Light and Dark; the choice is remembered in this browser (`folio-theme`).
+
 **Reading is not mastery.** Read markers only track that a topic was opened or practiced; the retention count requires a correct quiz response and success in a later spaced review. The mock exams are not official UNA assessments.
 
 ## Saving work

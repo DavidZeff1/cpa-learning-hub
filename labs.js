@@ -2,7 +2,8 @@
 // Interactive labs: small visual simulations attached to lessons.
 // Each lab keeps its state in memory (per browser tab) so re-rendering a page does not reset it.
 
-const LAB_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#6250d6'];
+// Series colours come from CSS variables so light and dark themes each use their own validated steps.
+const LAB_COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
 const labEsc = value => String(value).replace(/[&<>"']/g, char =>
   ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 const labRound = (n, d=2) => Math.round(n * 10 ** d) / 10 ** d;
@@ -147,11 +148,11 @@ function labChart(spec) {
   out += xs.map((x, i) => (i % every === 0 && lastX - i >= every / 2) || i === lastX ? `<text class="axis" x="${X(x)}" y="${H - m.b + 18}" text-anchor="middle">${labEsc(xf(x))}</text>` : '').join('');
   if (spec.xLabel) out += `<text class="axis" x="${(m.l + W - m.r) / 2}" y="${H - 6}" text-anchor="middle">${labEsc(spec.xLabel)}</text>`;
   for (const r of spec.refs || []) out += `<line class="ref" x1="${m.l}" x2="${W - m.r}" y1="${Y(r.y)}" y2="${Y(r.y)}"/><text class="axis" x="${r.align === 'right' ? W - m.r - 6 : m.l + 6}" y="${Y(r.y) + (r.below ? 15 : -6)}" text-anchor="${r.align === 'right' ? 'end' : 'start'}">${labEsc(r.label)}</text>`;
-  out += spec.series.map(s => `<path d="${s.values.map((v, i) => (i ? 'L' : 'M') + X(xs[i]).toFixed(1) + ' ' + Y(v).toFixed(1)).join('')}" stroke="${s.color}" class="series"/>`).join('');
+  out += spec.series.map(s => `<path d="${s.values.map((v, i) => (i ? 'L' : 'M') + X(xs[i]).toFixed(1) + ' ' + Y(v).toFixed(1)).join('')}" style="stroke:${s.color}" class="series"/>`).join('');
   const ends = spec.series.map(s => ({s, y:Y(s.values[s.values.length - 1])})).sort((a, b) => a.y - b.y);
   ends.forEach((e, i) => { if (i && e.y - ends[i - 1].y < 15) e.y = ends[i - 1].y + 15; });
-  out += ends.map(({s, y}) => `<line x1="${W - m.r + 8}" x2="${W - m.r + 22}" y1="${y}" y2="${y}" stroke="${s.color}" stroke-width="2" stroke-linecap="round"/><text class="end-label" x="${W - m.r + 27}" y="${y + 4}">${labEsc(s.name)}</text>`).join('');
-  for (const mk of spec.marks || []) out += `<circle cx="${X(mk.x)}" cy="${Y(mk.y)}" r="5" fill="${mk.color || '#202922'}" class="mark"/><text class="mark-label" x="${X(mk.x)}" y="${Y(mk.y) - 11}" text-anchor="middle">${labEsc(mk.label)}</text>`;
+  out += ends.map(({s, y}) => `<line x1="${W - m.r + 8}" x2="${W - m.r + 22}" y1="${y}" y2="${y}" style="stroke:${s.color}" stroke-width="2" stroke-linecap="round"/><text class="end-label" x="${W - m.r + 27}" y="${y + 4}">${labEsc(s.name)}</text>`).join('');
+  for (const mk of spec.marks || []) out += `<circle cx="${X(mk.x)}" cy="${Y(mk.y)}" r="5" style="fill:${mk.color || 'var(--ink)'}" class="mark"/><text class="mark-label" x="${X(mk.x)}" y="${Y(mk.y) - 11}" text-anchor="middle">${labEsc(mk.label)}</text>`;
   out += `<line class="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" visibility="hidden"/>`;
   const data = {W, l:m.l, r:m.r, x0, x1, xs, xFmt:spec.xFmt || 'num', yFmt:spec.yFmt || 'usd', xName:spec.xName || '',
     series:spec.series.map(s => ({name:s.name, color:s.color, values:s.values}))};
@@ -561,7 +562,7 @@ labDefs.cvp = {
     const chart = labChart({title:'Revenue and total cost by units sold', xs, xFmt:'num', xName:'Units', xLabel:'Units sold',
       series:[{name:'Revenue', color:LAB_COLORS[0], values:xs.map(u => u * s.price)}, {name:'Total cost', color:LAB_COLORS[1], values:xs.map(u => s.fc + u * s.vc)}],
       refs:[{y:s.fc, label:'Fixed costs ' + usd(s.fc), align:'right', below:true}],
-      marks:[{x:be, y:be * s.price, label:'Break-even ' + labNum(Math.ceil(be))}, ...(s.units <= maxU ? [{x:s.units, y:s.units * s.price, label:'Expected', color:'#646e65'}] : [])]});
+      marks:[{x:be, y:be * s.price, label:'Break-even ' + labNum(Math.ceil(be))}, ...(s.units <= maxU ? [{x:s.units, y:s.units * s.price, label:'Expected', color:'var(--muted)'}] : [])]});
     const mos = s.units - be;
     return `<div class="lab-stats">${labStat('Contribution margin', usd(cm) + ' / unit', labRound(cm / s.price * 100, 1) + '% of price')}${labStat('Break-even', labNum(Math.ceil(be)) + ' units', usd(be * s.price) + ' of sales')}
       ${labStat(profit >= 0 ? 'Profit at expected sales' : 'Loss at expected sales', usd(Math.abs(profit)))}${labStat('Margin of safety', mos >= 0 ? labNum(Math.floor(mos)) + ' units' : 'None', mos >= 0 && s.units ? labRound(mos / s.units * 100, 1) + '% of expected sales' : 'Expected sales are below break-even')}</div>
