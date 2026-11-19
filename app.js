@@ -177,6 +177,16 @@ function library() {
   const counts = types.filter(t=>coursesOf(t).length).map(t=>plural(coursesOf(t).length,t.toLowerCase())).join(' · ');
   return heading('My library',counts,addItem()) + `<div class="controls">${filterButtons()}<input class="search" type="search" aria-label="Search library" id="search" value="${escapeHTML(search)}" placeholder="Search library…"></div><div id="results">${libraryGrid()}</div>`;
 }
+const lessonState = t => isMastered(t)?'retained':due(t)?'due':t.done?'progress':'new';
+const lessonStateLabel = {retained:'Retained',due:'Due for review',progress:'In progress',new:'New'};
+function masteryMap(c,chapters) {
+  const rows=chapters.map(({chapter,topics},i)=>`<div class="map-row"><span class="map-label" title="${escapeHTML(chapter.title)}">${String(i+1).padStart(2,'0')} <span>${escapeHTML(chapter.title)}</span></span><span class="map-cells">${topics.map(t=>{
+    const st=lessonState(t);
+    return `<a class="map-cell ${st}" href="${endpoint(c)}/${t.id}" title="${escapeHTML(t.title)}: ${lessonStateLabel[st]}" aria-label="${escapeHTML(t.title)}, ${lessonStateLabel[st]}"></a>`;
+  }).join('')}</span></div>`).join('');
+  return `<section class="panel padded mastery-map" aria-label="Lesson map"><div class="split"><h3>Lesson map</h3><div class="map-legend">${Object.entries(lessonStateLabel).reverse().map(([k,v])=>`<span><i class="map-cell ${k}"></i>${v}</span>`).join('')}</div></div>
+    <p class="help">Every square is a lesson. Click one to jump straight to it.</p><div class="map-rows">${rows}</div></section>`;
+}
 function principlesPage(c) {
   const chapters = principlesChapters.map(chapter => ({
     chapter,
@@ -190,7 +200,7 @@ function principlesPage(c) {
     <div><strong>${mastered}</strong><span>Retained in review</span></div>
     <div><strong>${dueCount}</strong><span>Due for review</span></div>
     <div><strong>${c.topics.length}</strong><span>Lessons</span></div>
-  </div><p class="help">Marking a lesson as read is not mastery. Answer its question correctly and retrieve it again on a later review day to make progress toward retention.</p>`;
+  </div>${masteryMap(c,chapters)}<p class="help">Marking a lesson as read is not mastery. Answer its question correctly and retrieve it again on a later review day to make progress toward retention.</p>`;
   const groups = chapters.map(({chapter,topics},i)=>{
     const understood = topics.filter(isMastered).length;
     const shouldOpen = openTopic ? topics.some(t=>t.id===openTopic) : i===0;
@@ -201,9 +211,9 @@ function principlesPage(c) {
       const details = t.worked ? `<div class="worked-box"><h4>Worked example</h4><p>${escapeHTML(t.worked)}</p></div>
         <p class="pitfall"><strong>Common mistake:</strong> ${escapeHTML(t.pitfall||'')}</p>` : '';
       return `<details class="lesson-card deep-lesson" id="lesson-${escapeHTML(t.id)}" ${openTopic===t.id||(!openTopic&&i===0&&j===0)?'open':''}>
-        <summary><span class="lesson-sequence">${j+1}</span><span class="lesson-title">${escapeHTML(t.title)}</span>
+        <summary><span class="lesson-sequence">${j+1}</span><span class="lesson-title">${escapeHTML(t.title)}</span>${labFor(t.id)?'<span class="lab-pill">Lab</span>':''}
         <small class="${masteredNow?'retained':''}">${state}</small></summary>
-        <div class="lesson-content"><div class="reading">${escapeHTML(theory)}</div>${details}
+        <div class="lesson-content"><div class="reading rich">${formatReading(theory)}</div>${details}${labBlock(t.id)}
         <details class="recall-box"><summary>Try active recall</summary><p>${escapeHTML(t.prompt)}</p>
           <details class="recall-answer"><summary>Reveal model answer</summary><p>${escapeHTML(t.answer)}</p></details>
         </details><div class="actions">
@@ -234,8 +244,8 @@ function details(c,tab) {
   else if(c.id==='ac-297p') body=session?.mode==='practice'&&session.scope===c.id?studySession():principlesPage(c);
   else {
     body=`<div class="section-head"><div><h2>Study topics</h2><p class="help">${countDone(c)} of ${plural(c.topics.length,'topic')} studied</p></div>${newTopicButton(c)}</div>`;
-    body+=c.topics.map((t,i)=>`<details class="lesson-card" ${t.id===openTopic||(!openTopic&&i===Math.max(0,c.topics.findIndex(x=>!x.done)))?'open':''}>
-      <summary><span>${escapeHTML(t.title)}</span>${t.done?'<small>✓ Studied</small>':''}</summary><div class="reading">${escapeHTML(t.reading)}</div>
+    body+=c.topics.map((t,i)=>`<details class="lesson-card" id="lesson-${escapeHTML(t.id)}" ${t.id===openTopic||(!openTopic&&i===Math.max(0,c.topics.findIndex(x=>!x.done)))?'open':''}>
+      <summary><span>${escapeHTML(t.title)}</span>${labFor(t.id)?'<span class="lab-pill">Lab</span>':''}${t.done?'<small>✓ Studied</small>':''}</summary><div class="reading rich">${formatReading(t.reading)}</div>${labBlock(t.id)}
       <div class="actions">${action('studied',t.done?'Mark unread':'Mark studied',t.done?'btn light':'btn green',`data-c="${c.id}" data-t="${t.id}"`)}
       ${action('topic','Edit topic','text-link',`data-c="${c.id}" data-t="${t.id}"`)}</div></details>`).join('');
     if(!c.topics.length) body+=empty('Add a topic with a lesson and a recall prompt to start studying.');
@@ -281,6 +291,12 @@ function casePage() {
     }).join('')}${s.responses?`<p>${s.score} of ${test.parts.length} correct.</p><div class="actions">${test.exhibits?'':action('case','Try fresh figures','btn green',`data-i="${s.kind}" data-c="${s.scope}"`)}${action('end','Finish','btn light')}</div>`:'<button class="btn green">Check my work</button>'}</form></section>`;
 }
 document.addEventListener('submit',event=>{
+  if(event.target.id==='drill-form') {
+    event.preventDefault();
+    if(session?.mode==='drill'&&drillCheck(session,event.target.elements)) {render();$('.feedback')?.scrollIntoView({block:'nearest'});$('[data-action="drill-next"]')?.focus({preventScroll:true});}
+    else notify('Complete your answer first.');
+    return;
+  }
   if(event.target.id!=='case-form') return;
   event.preventDefault();
   const s=session;
@@ -322,7 +338,8 @@ function mockPage() {
       return `<details class="mock-result"><summary><strong>${i+1}. ${escapeHTML(t.title)}</strong> · ${response===t.correct?'Correct':response===undefined?'Not answered':'Review'}</summary>
         <p>${escapeHTML(t.question)}</p>
         <p><strong>Your answer:</strong> ${response===undefined?'No response':escapeHTML(t.choices[response])}</p>
-        <p><strong>Correct answer:</strong> ${escapeHTML(t.choices[t.correct])}</p><p>${escapeHTML(t.explanation)}</p></details>`;
+        <p><strong>Correct answer:</strong> ${escapeHTML(t.choices[t.correct])}</p><p>${escapeHTML(t.explanation)}</p>
+        ${response!==t.correct?link(`${endpoint(course(cid))}/${t.id}`,'Revisit the lesson '+icon('arrow')):''}</details>`;
     }).join('');
     return `<section class="panel padded practice"><span class="eyebrow">Mock ${s.exam+1} complete</span>
       <h2>${s.score} / ${s.items.length} correct</h2><p>Score: ${Math.round(s.score*100/s.items.length)}% · ${elapsed} minute${elapsed===1?'':'s'} elapsed</p>
@@ -366,13 +383,14 @@ function practicePage(c) {
   if (session?.mode==='case' && session.scope===c.id) return casePage();
   if (session?.mode==='mock' && session.scope===c.id) return mockPage();
   if (session?.mode==='practice' && session.scope===c.id) return studySession();
+  if (session?.mode==='drill' && session.scope===c.id) return drillView(session, id=>c.topics.some(t=>t.id===id)?`${endpoint(c)}/${id}`:'');
   const qs=c.topics.filter(t=>t.question), attempts=qs.reduce((n,t)=>n+t.attempts,0), hits=qs.reduce((n,t)=>n+t.hits,0);
   return `<div class="panel padded practice"><span class="tile-icon">${icon('book')}</span><h2>Practice questions</h2>
     <p>${plural(qs.length,'question')} available · ${hits} correct across ${plural(attempts,'attempt')}</p>
     <p class="help">Start with up to five questions. Missed questions come first, followed by the least practiced topics.</p>
     <div class="actions section-head">${qs.length?action('practice','Practice up to 5 '+icon('arrow'),'btn green',`data-c="${c.id}"`):newTopicButton(c)}
     ${qs.length>5?action('practice','Full set','btn light',`data-c="${c.id}" data-all="yes"`):''}
-    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>` + practiceExtras(c) + casePicker(c);
+    ${action('course-review','Review concepts','btn light',`data-c="${c.id}"`)}</div></div>` + drillPanel(c) + practiceExtras(c) + casePicker(c);
 }
 function reviewPage() {
   if (session?.mode==='review') return heading('Review queue')+studySession();
@@ -399,7 +417,9 @@ function studySession() {
   const [cid,tid]=s.items[s.index], c=course(cid), t=pickTopic(db,cid,tid);
   const top=`<div class="split"><span class="eyebrow">${isQuiz?'Question':'Concept'} ${s.index+1} of ${s.items.length}</span>${action('end','End session','text-link')}</div>`;
   const controls = isQuiz?`<div class="choices">${t.choices.map((v,i)=>`<button class="choice ${s.shown?(i===t.correct?'correct':i===s.choice?'wrong':''):''}" data-action="answer" data-i="${i}" ${s.shown?'disabled':''}>${escapeHTML(v)}</button>`).join('')}</div>
-    ${s.shown?`<div class="feedback" role="status"><strong>${s.choice===t.correct?'Correct.':'Correct answer: '+escapeHTML(t.choices[t.correct])+'.'}</strong> ${escapeHTML(t.explanation)}</div>${action('next',s.index===s.items.length-1?'See results':'Next question','btn green')}`:''}`:
+    ${s.shown?`<div class="feedback ${s.choice===t.correct?'ok':'bad'}" role="status"><strong>${s.choice===t.correct?'Correct.':'Correct answer: '+escapeHTML(t.choices[t.correct])+'.'}</strong> ${escapeHTML(t.explanation)}
+      ${s.choice!==t.correct&&t.pitfall?`<p class="pitfall"><strong>Watch for this:</strong> ${escapeHTML(t.pitfall)}</p>`:''}</div>
+      <div class="actions">${action('next',s.index===s.items.length-1?'See results':'Next question','btn green')}${s.choice!==t.correct?link(`${endpoint(c)}/${t.id}`,'Revisit the lesson'+(labFor(t.id)?' and lab':'')+' '+icon('arrow')):''}</div>`:'<p class="help kbd-hint">Tip: press 1, 2 or 3 to answer, then Enter for the next question.</p>'}`:
     `${s.shown?`<div class="feedback">${escapeHTML(t.answer)}</div><p class="help">How did you do from memory?</p><div class="actions" style="margin-top:10px">${action('miss','Missed · retry today','btn light')}${action('recall',`Recalled · ${plural(intervals[Math.min(t.level,intervals.length-1)],'day')}`,'btn green')}</div>`:
       `<label class="field">Your answer (optional)<textarea id="scratch" placeholder="Write what you remember, or answer aloud."></textarea></label>${action('reveal','Reveal answer','btn green')}`}`;
   return `<section class="panel padded practice">${top}<p class="help">${escapeHTML(c.code||c.title)} · ${escapeHTML(t.title)}</p>
@@ -472,6 +492,14 @@ function render() {
   $('#main').innerHTML=views[actual]();
   $('#date').innerHTML=icon('calendar')+escapeHTML(new Date().toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}));
 }
+// Deep links: #course/<course>/learn/<lesson> opens and scrolls to that lesson.
+function hashTopic() { const id=location.hash.slice(1).split('/')[3]||''; return safeID(id)?id:''; }
+function scrollToTopic() {
+  const id=hashTopic(), el=id&&document.getElementById('lesson-'+id);
+  if(!el) return;
+  el.open=true; el.closest('.chapter-group')?.setAttribute('open','');
+  el.scrollIntoView({block:'start'}); el.querySelector('summary')?.focus({preventScroll:true});
+}
 function toggleMenu(open) {
   $('.sidebar').classList.toggle('open',open); $('.scrim').hidden=!open;
   $('#menu').setAttribute('aria-expanded',String(open));
@@ -480,11 +508,20 @@ function toggleMenu(open) {
 $('#menu').onclick=()=>toggleMenu(true);
 $('.scrim').onclick=()=>toggleMenu(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('.sidebar').classList.contains('open')) toggleMenu(false);});
+// Quiz shortcuts: 1–3 choose an answer, Enter moves on. Ignored while typing or when a button has focus.
+document.addEventListener('keydown',e=>{
+  if(!session||e.metaKey||e.ctrlKey||e.altKey||dialog.open||e.target.closest('input,textarea,select,button,a,summary,[contenteditable]')) return;
+  const n=Number(e.key);
+  if(session.mode==='practice') {
+    if(!session.shown&&n>=1&&n<=3&&session.index<session.items.length) {e.preventDefault();recordAnswer(n-1);}
+    else if(session.shown&&e.key==='Enter') {e.preventDefault();advance();}
+  } else if(session.mode==='mock'&&!session.complete&&n>=1&&n<=3) {e.preventDefault();answerMock(n-1);}
+});
 $('.sidebar').onclick=e=>{if(e.target.closest('a')&&$('.sidebar').classList.contains('open')) toggleMenu(false);};
 window.addEventListener('hashchange',()=>{
   if(location.hash==='#main') { history.replaceState(null,'',prevHash||'#desk'); $('#main').focus(); return; }
-  prevHash=location.hash; session=null; openTopic=''; filter='All'; search=''; noteSearch='';
-  render(); window.scrollTo(0,0); $('#main').focus({preventScroll:true});
+  prevHash=location.hash; session=null; openTopic=hashTopic(); filter='All'; search=''; noteSearch='';
+  render(); window.scrollTo(0,0); $('#main').focus({preventScroll:true}); scrollToTopic();
 });
 $('#main').addEventListener('input',e=>{
   if(e.target.id==='search') { search=e.target.value; $('#results').innerHTML=libraryGrid(); }
@@ -688,6 +725,8 @@ document.addEventListener('click',e=>{
         exam,index:0,startedAt:Date.now(),deadline:Date.now()+30*60000,complete:false};
       render();$('#main').focus();break;
     }
+    case 'drill': session=drillStart(kind,cid,$('#drill-focus')?.value||'');render();$('#main').focus();$('#drill-form select, #drill-form input')?.focus();break;
+    case 'drill-next': drillNext(session);render();$('#drill-form select, #drill-form input')?.focus();break;
     case 'mock-answer': answerMock(Number(i));break;
     case 'mock-skip': answerMock(undefined);break;
     case 'review': begin('review',reviewScope,getReviewItems().slice(0,10));break;
@@ -712,5 +751,7 @@ setInterval(()=>{
   if(remaining===0) finishMock();
 },1000);
 prevHash=location.hash;
+openTopic=hashTopic();
 render();
+scrollToTopic();
 
